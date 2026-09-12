@@ -6,6 +6,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -38,6 +39,12 @@ public class GlobalExceptionHandler {
     ProblemDetail handleMissingHeader(MissingRequestHeaderException ex) {
         return problem(HttpStatus.BAD_REQUEST, "Missing required header",
                 "Required header is absent: " + ex.getHeaderName());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    ProblemDetail handleMissingParameter(MissingServletRequestParameterException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "Missing required parameter",
+                "Required query parameter is absent: " + ex.getParameterName());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
