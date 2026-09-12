@@ -9,6 +9,11 @@ spring:
     username: calorie_user
     password: calorie_pass
     driver-class-name: org.postgresql.Driver
+  rabbitmq:
+    host: localhost
+    port: 9672
+    username: calorie_user
+    password: calorie_pass
   jpa:
     hibernate:
       ddl-auto: update

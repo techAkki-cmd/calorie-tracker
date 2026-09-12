@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: ai-service
+  rabbitmq:
+    host: localhost
+    port: 9672
+    username: calorie_user
+    password: calorie_pass
   servlet:
     multipart:
       # The 1MB default rejects almost every phone photo.
