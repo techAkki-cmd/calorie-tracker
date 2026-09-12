@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: calorie-tracker-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: calorie_user
+      POSTGRES_PASSWORD: calorie_pass
+      POSTGRES_DB: calorie_tracker
+    ports:
+      - "9432:5432"
+    volumes:
+      # Postgres 18+ expects a single mount at /var/lib/postgresql, not .../data,
+      # so that pg_upgrade --link can cross major versions without mount boundaries.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calorie_user -d calorie_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: calorie-tracker-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: calorie_user
+      RABBITMQ_DEFAULT_PASS: calorie_pass
+    ports:
+      - "9672:5672"
+      - "19672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
