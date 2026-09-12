@@ -17,6 +17,10 @@ spring:
               uri: http://localhost:9082
               predicates:
                 - Path=/api/goals/**,/api/meals/**,/api/foods/**
+            - id: ai-service
+              uri: http://localhost:9083
+              predicates:
+                - Path=/api/ai/**
           globalcors:
             cors-configurations:
               '[/**]':

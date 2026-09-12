@@ -1,0 +1,17 @@
+server:
+  port: 9083
+
+spring:
+  application:
+    name: ai-service
+  servlet:
+    multipart:
+      # The 1MB default rejects almost every phone photo.
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
+  model: gemini-2.5-flash
+  base-url: https://generativelanguage.googleapis.com/v1beta
