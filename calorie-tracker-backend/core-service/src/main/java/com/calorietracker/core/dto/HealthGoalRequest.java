@@ -7,14 +7,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
 
-public record HealthGoalDto(
-
-        UUID id,
-
-        UUID userId,
+public record HealthGoalRequest(
 
         @NotNull
         @Min(500)
@@ -38,10 +32,6 @@ public record HealthGoalDto(
 
         @DecimalMin("0.0")
         @Digits(integer = 3, fraction = 2)
-        BigDecimal targetWeight,
-
-        Instant createdAt,
-
-        Instant updatedAt
+        BigDecimal targetWeight
 ) {
 }
