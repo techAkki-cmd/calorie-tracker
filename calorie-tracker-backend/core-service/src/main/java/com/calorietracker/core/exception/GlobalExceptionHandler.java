@@ -53,6 +53,11 @@ public class GlobalExceptionHandler {
                 "Value for '" + ex.getName() + "' is not in the expected format");
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "Invalid request", ex.getMessage());
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     ProblemDetail handleDataIntegrity(DataIntegrityViolationException ex) {
         return problem(HttpStatus.CONFLICT, "Conflicting request",
