@@ -16,9 +16,9 @@ function RegisterForm() {
   const form = useRegisterForm();
   return (
     <AuthFormFields
-      title="Create account"
+      title="Create Account"
       description="Register with an email and password. You will be signed in automatically."
-      submitLabel="Create account"
+      submitLabel="Create Account"
       isSubmitting={form.isSubmitting}
       email={form.email}
       password={form.password}

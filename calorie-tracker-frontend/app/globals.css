@@ -3,14 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --background: #fafbfc;
-  --foreground: #0f172a;
+  --background: #fafafa;
+  --foreground: #18181b;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  @apply font-sans antialiased;
+  @apply bg-zinc-50 font-sans text-zinc-900 antialiased;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-zinc-200 bg-white shadow-sm;
+  }
 }
 
 @layer utilities {

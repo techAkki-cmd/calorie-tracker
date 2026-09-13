@@ -9,16 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "#FAFBFC",
+        canvas: "#FAFAFA",
         ink: {
-          DEFAULT: "#0F172A",
-          muted: "#475569",
-          subtle: "#64748B",
+          DEFAULT: "#18181B",
+          muted: "#52525B",
+          subtle: "#71717A",
         },
-        line: "#E2E8F0",
+        line: "#E4E4E7",
         accent: {
-          DEFAULT: "#1E293B",
-          hover: "#0F172A",
+          DEFAULT: "#18181B",
+          hover: "#27272A",
         },
       },
       fontFamily: {
@@ -29,9 +29,10 @@ const config: Config = {
         DEFAULT: "0.5rem",
         md: "0.625rem",
         lg: "0.75rem",
+        xl: "0.75rem",
       },
       boxShadow: {
-        hairline: "0 1px 0 0 rgb(15 23 42 / 0.04)",
+        hairline: "0 1px 0 0 rgb(24 24 27 / 0.04)",
       },
     },
   },

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import type { AuthFieldErrors } from "@/lib/authTypes";
 import { AuthCard, FieldError, TextField } from "@/components/auth/AuthCard";
 
@@ -71,14 +72,16 @@ export function AuthFormFields({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-accent text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+          aria-busy={isSubmitting}
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isSubmitting ? "Please wait…" : submitLabel}
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+          {isSubmitting ? `${submitLabel}…` : submitLabel}
         </button>
       </form>
-      <p className="mt-5 text-center text-sm text-ink-muted">
+      <p className="mt-6 text-center text-sm text-zinc-500">
         {footerHint}{" "}
-        <Link href={footerHref} className="font-medium text-ink underline-offset-4 hover:underline">
+        <Link href={footerHref} className="font-medium text-zinc-900 underline-offset-4 hover:underline">
           {footerLabel}
         </Link>
       </p>

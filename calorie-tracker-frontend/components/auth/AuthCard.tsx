@@ -11,11 +11,14 @@ type AuthCardProps = {
 
 export function AuthCard({ title, description, children }: AuthCardProps) {
   return (
-    <section className="flex justify-center px-4 py-12 sm:px-6 sm:py-20">
-      <div className="w-full max-w-md rounded-lg border border-line bg-white p-6 shadow-hairline sm:p-8">
-        <h1 className="text-lg font-semibold tracking-tight text-ink">{title}</h1>
-        <p className="mt-2 text-sm leading-6 text-ink-muted">{description}</p>
-        <div className="mt-6">{children}</div>
+    <section className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-10">
+      <div className="card w-full max-w-md rounded-xl p-8">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-500">
+          Calorie Tracker
+        </p>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900">{title}</h1>
+        <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
+        <div className="mt-8">{children}</div>
       </div>
     </section>
   );
@@ -52,7 +55,7 @@ export function TextField({
   const errorId = `${id}-error`;
   return (
     <label className="block">
-      <span className="text-sm font-medium text-ink">{label}</span>
+      <span className="text-sm font-medium text-zinc-900">{label}</span>
       <input
         id={id}
         type={type}
@@ -62,9 +65,9 @@ export function TextField({
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}
         className={cn(
-          "mt-1.5 w-full rounded-md border bg-white px-3 py-2 text-sm text-ink outline-none transition-colors",
-          "placeholder:text-ink-subtle focus:border-accent focus:ring-2 focus:ring-slate-200",
-          error ? "border-red-400" : "border-line",
+          "mt-1.5 w-full rounded-lg border bg-zinc-50/50 px-3 py-2.5 text-sm text-zinc-900 outline-none transition-shadow",
+          "placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-zinc-900",
+          error ? "border-red-500 focus:border-red-500 focus:ring-0" : "border-zinc-200",
         )}
       />
       <FieldError id={errorId} message={error} />

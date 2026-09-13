@@ -16,9 +16,9 @@ function LoginForm() {
   const form = useLoginForm();
   return (
     <AuthFormFields
-      title="Sign in"
+      title="Sign In"
       description="Use your calorie tracker account to open the dashboard."
-      submitLabel="Sign in"
+      submitLabel="Sign In"
       isSubmitting={form.isSubmitting}
       email={form.email}
       password={form.password}
