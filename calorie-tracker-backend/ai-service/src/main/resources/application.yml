@@ -18,8 +18,9 @@ spring:
 gemini:
   api:
     key: ${GEMINI_API_KEY}
-  model: gemini-2.5-flash
-  base-url: https://generativelanguage.googleapis.com/v1beta
+  # 2.0-flash was shut down June 2026; 2.5-flash 404s generateContent for many new keys.
+  model: gemini-3.6-flash
+  base-url: https://generativelanguage.googleapis.com
 
 pdf:
   import-dir: ${PDF_IMPORT_DIR:${java.io.tmpdir}/calorie-tracker-pdfs}

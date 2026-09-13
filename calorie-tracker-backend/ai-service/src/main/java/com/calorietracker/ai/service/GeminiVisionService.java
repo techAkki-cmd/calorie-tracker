@@ -100,7 +100,7 @@ public class GeminiVisionService {
 
     private String generateJson(Map<String, Object> requestBody) {
         GeminiGenerateContentResponse response = geminiWebClient.post()
-                .uri("/models/{model}:generateContent", model)
+                .uri("/v1beta/models/{model}:generateContent", model)
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(GeminiGenerateContentResponse.class)

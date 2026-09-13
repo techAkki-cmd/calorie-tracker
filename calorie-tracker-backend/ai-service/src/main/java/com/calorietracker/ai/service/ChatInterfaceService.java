@@ -161,7 +161,7 @@ public class ChatInterfaceService {
 
     private String firstText(Map<String, Object> requestBody) {
         GeminiGenerateContentResponse response = geminiWebClient.post()
-                .uri("/models/{model}:generateContent", model)
+                .uri("/v1beta/models/{model}:generateContent", model)
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(GeminiGenerateContentResponse.class)
