@@ -2,31 +2,32 @@
 
 import { AuthFormFields } from "@/components/auth/AuthFormFields";
 import { RedirectIfAuthenticated } from "@/components/auth/RequireAuth";
-import { useLoginForm } from "@/hooks/useLoginForm";
+import { useRegisterForm } from "@/hooks/useRegisterForm";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
     <RedirectIfAuthenticated>
-      <LoginForm />
+      <RegisterForm />
     </RedirectIfAuthenticated>
   );
 }
 
-function LoginForm() {
-  const form = useLoginForm();
+function RegisterForm() {
+  const form = useRegisterForm();
   return (
     <AuthFormFields
-      title="Sign in"
-      description="Use your calorie tracker account to open the dashboard."
-      submitLabel="Sign in"
+      title="Create account"
+      description="Register with an email and password. You will be signed in automatically."
+      submitLabel="Create account"
       isSubmitting={form.isSubmitting}
       email={form.email}
       password={form.password}
       fieldErrors={form.fieldErrors}
       formError={form.formError}
-      footerHint="Need an account?"
-      footerHref="/register"
-      footerLabel="Create one"
+      footerHint="Already have an account?"
+      footerHref="/login"
+      footerLabel="Sign in"
+      passwordAutoComplete="new-password"
       onEmailChange={form.setEmail}
       onPasswordChange={form.setPassword}
       onSubmit={form.submit}

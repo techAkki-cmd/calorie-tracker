@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { AppAuthProvider } from "@/components/AuthProvider";
 import { TopNav } from "@/components/TopNav";
 import "./globals.css";
 
@@ -22,10 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} min-h-screen bg-canvas font-sans text-ink antialiased`}>
-        <div className="flex min-h-screen flex-col">
-          <TopNav />
-          <main className="flex-1">{children}</main>
-        </div>
+        <AppAuthProvider>
+          <div className="flex min-h-screen flex-col">
+            <TopNav />
+            <main className="flex-1">{children}</main>
+          </div>
+        </AppAuthProvider>
       </body>
     </html>
   );

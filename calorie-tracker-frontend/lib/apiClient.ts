@@ -1,5 +1,4 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:9080";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export const ACCESS_TOKEN_STORAGE_KEY = "calorie-tracker.accessToken";
 export const ACCESS_TOKEN_CHANGED_EVENT = "calorie-tracker.access-token-changed";
@@ -8,19 +7,27 @@ type ProblemDetail = {
   status?: number;
   title?: string;
   detail?: string;
+  errors?: Record<string, string>;
 };
 
 export class ApiError extends Error {
   readonly status: number;
   readonly title: string;
   readonly detail: string;
+  readonly fieldErrors: Record<string, string>;
 
-  constructor(status: number, title: string, detail: string) {
+  constructor(
+    status: number,
+    title: string,
+    detail: string,
+    fieldErrors: Record<string, string> = {},
+  ) {
     super(detail);
     this.name = "ApiError";
     this.status = status;
     this.title = title;
     this.detail = detail;
+    this.fieldErrors = fieldErrors;
   }
 }
 
@@ -70,7 +77,7 @@ export async function apiClient<T>(path: string, init: ApiRequestInit = {}): Pro
   });
 
   if (!response.ok) {
-    throw await toApiError(response);
+    throw await toApiError(path, response);
   }
 
   if (response.status === 204) {
@@ -123,17 +130,18 @@ function isPlainJsonBody(body: unknown): body is Record<string, unknown> | unkno
   return true;
 }
 
-async function toApiError(response: Response): Promise<ApiError> {
+async function toApiError(path: string, response: Response): Promise<ApiError> {
   const problem = await readProblemDetail(response);
   const status = problem.status ?? response.status;
   const title = problem.title ?? defaultTitleForStatus(status);
   const detail = problem.detail ?? defaultDetailForStatus(status);
+  const fieldErrors = problem.errors ?? {};
 
-  if (status === 401) {
+  if (status === 401 && !path.startsWith("/api/auth/")) {
     clearAccessToken();
   }
 
-  return new ApiError(status, title, detail);
+  return new ApiError(status, title, detail, fieldErrors);
 }
 
 async function readProblemDetail(response: Response): Promise<ProblemDetail> {
