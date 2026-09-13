@@ -20,3 +20,9 @@ gemini:
     key: ${GEMINI_API_KEY}
   model: gemini-2.5-flash
   base-url: https://generativelanguage.googleapis.com/v1beta
+
+pdf:
+  import-dir: ${PDF_IMPORT_DIR:${java.io.tmpdir}/calorie-tracker-pdfs}
+
+core-service:
+  base-url: http://localhost:9082

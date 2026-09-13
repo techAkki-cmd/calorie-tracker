@@ -24,4 +24,16 @@ public class WebClientConfig {
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
+
+    /**
+     * Internal hop to core-service. Goes around the gateway so this service does not need a JWT.
+     */
+    @Bean
+    WebClient coreServiceWebClient(WebClient.Builder builder,
+                                   @Value("${core-service.base-url}") String baseUrl) {
+        return builder
+                .baseUrl(baseUrl)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
 }

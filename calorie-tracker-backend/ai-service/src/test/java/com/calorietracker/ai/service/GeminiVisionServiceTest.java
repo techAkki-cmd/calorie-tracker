@@ -98,6 +98,80 @@ class GeminiVisionServiceTest {
     }
 
     @Test
+    void mapsDiaryArrayToItems() {
+        String body = envelope("""
+                [{"name":"Oatmeal","mealType":"BREAKFAST","quantity":"1 bowl","calories":320,"protein":10,"carbs":54,"fat":6}]
+                """);
+
+        var items = serviceReturning(HttpStatus.OK, body).parseNutritionDiary("oatmeal for breakfast");
+
+        assertThat(items).hasSize(1);
+        assertThat(items.getFirst().name()).isEqualTo("Oatmeal");
+        assertThat(items.getFirst().mealType()).isEqualTo("BREAKFAST");
+        assertThat(items.getFirst().calories()).isEqualTo(320);
+    }
+
+    @Test
+    void stripsMarkdownFencesAroundDiaryArray() {
+        String body = envelope("""
+                ```json
+                [{"name":"Apple","mealType":"SNACKS","quantity":"1","calories":95,"protein":0.5,"carbs":25,"fat":0.3}]
+                ```
+                """);
+
+        var items = serviceReturning(HttpStatus.OK, body).parseNutritionDiary("apple");
+
+        assertThat(items.getFirst().name()).isEqualTo("Apple");
+        assertThat(items.getFirst().mealType()).isEqualTo("SNACKS");
+    }
+
+    @Test
+    void acceptsItemsEnvelopeWhenArrayIsWrapped() {
+        String body = envelope("""
+                {"items":[{"name":"Rice","mealType":"lunch","quantity":"1 cup","calories":200,"protein":4,"carbs":45,"fat":0.5}]}
+                """);
+
+        var items = serviceReturning(HttpStatus.OK, body).parseNutritionDiary("rice");
+
+        assertThat(items.getFirst().mealType()).isEqualTo("LUNCH");
+    }
+
+    @Test
+    void rejectsInvalidDiaryJson() {
+        assertThatThrownBy(() -> serviceReturning(HttpStatus.OK, envelope("not json"))
+                .parseNutritionDiary("whatever"))
+                .isInstanceOf(AiExtractionException.class)
+                .hasMessageContaining("could not be parsed as diary");
+    }
+
+    @Test
+    void dropsRowsWithUnknownMealType() {
+        String body = envelope("""
+                [
+                  {"name":"Mystery","mealType":"BRUNCH","quantity":"1","calories":1,"protein":1,"carbs":1,"fat":1},
+                  {"name":"Eggs","mealType":"BREAKFAST","quantity":"2","calories":140,"protein":12,"carbs":1,"fat":10}
+                ]
+                """);
+
+        var items = serviceReturning(HttpStatus.OK, body).parseNutritionDiary("diary");
+
+        assertThat(items).extracting(com.calorietracker.ai.dto.NutritionDiaryItem::name)
+                .containsExactly("Eggs");
+    }
+
+    @Test
+    void sendsDiaryTextWithoutInlineImage() {
+        String body = envelope("[]");
+
+        assertThatThrownBy(() -> serviceReturning(HttpStatus.OK, body).parseNutritionDiary("eggs toast"))
+                .isInstanceOf(AiExtractionException.class);
+
+        assertThat(capturedBody.get()).doesNotContain("inline_data");
+        assertThat(capturedBody.get()).contains("eggs toast");
+        assertThat(capturedBody.get()).contains("BREAKFAST");
+    }
+
+    @Test
     void rejectsNonImageUpload() {
         MockMultipartFile pdf = new MockMultipartFile("image", "meal.pdf", MediaType.APPLICATION_PDF_VALUE,
                 "not-an-image".getBytes(StandardCharsets.UTF_8));

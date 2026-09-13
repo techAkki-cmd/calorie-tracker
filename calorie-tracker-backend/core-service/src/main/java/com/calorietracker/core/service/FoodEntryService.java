@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,21 +25,19 @@ public class FoodEntryService {
 
     @Transactional
     public FoodEntryResponse logFoodEntry(UUID userId, FoodEntryRequest request) {
-        FoodEntry entry = FoodEntry.builder()
-                .userId(userId)
-                .name(request.name())
-                .mealType(request.mealType())
-                .quantity(request.quantity())
-                .calories(request.calories())
-                .protein(request.protein())
-                .carbs(request.carbs())
-                .fat(request.fat())
-                .micronutrientSummary(request.micronutrientSummary())
-                .consumedAt(request.consumedAt())
-                .build();
-
         // flush so Hibernate populates the audit timestamps before the response is built
-        return toResponse(foodEntryRepository.saveAndFlush(entry));
+        return toResponse(foodEntryRepository.saveAndFlush(toEntity(userId, request)));
+    }
+
+    @Transactional
+    public List<FoodEntryResponse> logFoodEntries(UUID userId, List<FoodEntryRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+
+        List<FoodEntry> saved = foodEntryRepository.saveAllAndFlush(
+                requests.stream().map(request -> toEntity(userId, request)).toList());
+        return saved.stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -62,6 +61,21 @@ public class FoodEntryService {
                         userId, mealType, start, end, pageable);
 
         return PagedResponse.from(entries, this::toResponse);
+    }
+
+    private static FoodEntry toEntity(UUID userId, FoodEntryRequest request) {
+        return FoodEntry.builder()
+                .userId(userId)
+                .name(request.name())
+                .mealType(request.mealType())
+                .quantity(request.quantity())
+                .calories(request.calories())
+                .protein(request.protein())
+                .carbs(request.carbs())
+                .fat(request.fat())
+                .micronutrientSummary(request.micronutrientSummary())
+                .consumedAt(request.consumedAt())
+                .build();
     }
 
     private FoodEntryResponse toResponse(FoodEntry entry) {

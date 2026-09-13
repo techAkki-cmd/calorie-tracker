@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,6 +41,13 @@ public class FoodEntryController {
     public FoodEntryResponse logMeal(@RequestHeader("X-User-Id") UUID userId,
                                      @Valid @RequestBody FoodEntryRequest request) {
         return foodEntryService.logFoodEntry(userId, request);
+    }
+
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<FoodEntryResponse> logMealsBulk(@RequestHeader("X-User-Id") UUID userId,
+                                                @Valid @RequestBody List<@Valid FoodEntryRequest> requests) {
+        return foodEntryService.logFoodEntries(userId, requests);
     }
 
     @GetMapping
