@@ -1,9 +1,8 @@
 "use client";
 
-import { Pencil, X } from "lucide-react";
-import { CalorieRing } from "@/components/goals/CalorieRing";
+import { Pencil, Target, X } from "lucide-react";
+import { GoalMetricsPanel } from "@/components/goals/GoalMetricsPanel";
 import { GoalTargetsDialog } from "@/components/goals/GoalTargetsDialog";
-import { MacroBar } from "@/components/goals/MacroBar";
 import type { HealthGoal, HealthGoalDraft, HealthGoalFieldErrors } from "@/lib/healthGoalTypes";
 
 type GoalSettingsCardProps = {
@@ -40,56 +39,51 @@ export function GoalSettingsCard({
   onDismissSaveError,
 }: GoalSettingsCardProps) {
   return (
-    <section className="card p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
+    <section className="card overflow-hidden">
+      <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4">
         <div>
-          <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Targets</h2>
-          <p className="mt-1 text-xs text-zinc-500">Daily nutrition goals.</p>
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4 text-zinc-400" aria-hidden />
+            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Goal Settings</h2>
+          </div>
+          <p className="mt-1.5 text-xs text-zinc-500">Daily nutrition targets</p>
         </div>
         <button
           type="button"
-          aria-label="Edit targets"
+          aria-label="Edit Targets"
+          title="Edit Targets"
           aria-haspopup="dialog"
           aria-expanded={isEditing}
           onClick={onStartEditing}
           disabled={loadState !== "ready" || isSaving}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900 disabled:opacity-40"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Pencil className="h-3.5 w-3.5" aria-hidden />
         </button>
       </div>
 
-      <div className="mt-5" aria-live="polite">
+      <div className="p-5" aria-live="polite">
         {loadState === "loading" && (
-          <p className="text-sm text-zinc-500">Loading goals…</p>
+          <GoalMetricsSkeleton />
         )}
         {loadState === "error" && (
           <p className="text-sm text-red-600" role="alert">{loadError}</p>
         )}
         {loadState === "ready" && !goals && (
-          <p className="text-sm text-zinc-500">
-            No targets yet. Use the pencil to set calories and macros.
-          </p>
+          <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/70 px-4 py-8 text-center">
+            <Target className="mx-auto h-5 w-5 text-zinc-400" aria-hidden />
+            <p className="mt-3 text-sm font-medium text-zinc-700">No targets configured</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">Use Edit Targets to create your daily plan.</p>
+          </div>
         )}
         {loadState === "ready" && goals && (
-          <div className="space-y-5">
-            <CalorieRing consumed={0} target={goals.dailyCalorieTarget} />
-            <div className="space-y-3">
-              <MacroBar label="Protein" consumed={0} target={goals.proteinTarget} />
-              <MacroBar label="Carbs" consumed={0} target={goals.carbTarget} />
-              <MacroBar label="Fat" consumed={0} target={goals.fatTarget} />
-            </div>
-            <p className="text-xs text-zinc-500">
-              Weight goal{" "}
-              <span className="font-medium tabular-nums text-zinc-900">
-                {goals.targetWeight == null ? "—" : `${goals.targetWeight} kg`}
-              </span>
-            </p>
+          <div>
+            <GoalMetricsPanel goals={goals} />
             {saveStatus === "saving" && (
-              <p className="text-xs text-zinc-400">Saving…</p>
+              <p className="mt-3 text-center text-xs text-zinc-400">Syncing targets…</p>
             )}
             {saveStatus === "saved" && (
-              <p className="text-xs text-zinc-400">Targets saved.</p>
+              <p className="mt-3 text-center text-xs text-emerald-600">Targets saved.</p>
             )}
           </div>
         )}
@@ -122,5 +116,24 @@ export function GoalSettingsCard({
         </div>
       )}
     </section>
+  );
+}
+
+function GoalMetricsSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4" aria-label="Loading goal metrics">
+      <div className="flex h-40 items-center justify-center rounded-xl bg-zinc-50">
+        <div className="h-28 w-28 rounded-full border-8 border-zinc-100" />
+      </div>
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="rounded-xl border border-zinc-100 p-3">
+          <div className="flex justify-between">
+            <div className="h-3 w-14 rounded bg-zinc-100" />
+            <div className="h-3 w-20 rounded bg-zinc-100" />
+          </div>
+          <div className="mt-3 h-1.5 rounded-full bg-zinc-100" />
+        </div>
+      ))}
+    </div>
   );
 }

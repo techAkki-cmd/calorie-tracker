@@ -102,9 +102,11 @@ export function useHealthGoals() {
     }
 
     const submittedDraft = { ...draft };
+    const previousGoals = goals;
     saveInFlightRef.current = true;
     setIsSaving(true);
     setSaveStatus("saving");
+    setGoals(parsed);
 
     try {
       const response = await apiClient<HealthGoalResponse>("/api/goals", {
@@ -123,6 +125,7 @@ export function useHealthGoals() {
       setIsEditing(false);
       setSaveStatus("saved");
     } catch (error) {
+      setGoals(previousGoals);
       setDraft(submittedDraft);
       setIsEditing(true);
       setSaveStatus("idle");
