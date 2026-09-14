@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ChevronLeft,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { ApiError, apiClient } from "@/lib/apiClient";
 
-type Meal = {
+export type Meal = {
   id: string;
   name: string;
   mealType: "BREAKFAST" | "LUNCH" | "DINNER" | "SNACKS";
@@ -33,11 +33,15 @@ type MealPageResponse = {
 
 type MealFeedProps = {
   refreshKey: number;
+  onTodayMealsChange: (meals: Meal[]) => void;
 };
 
 const PAGE_SIZE = 10;
+const TOTALS_PAGE_SIZE = 100;
+const PDF_POLL_INTERVAL_MS = 3_000;
+const PDF_POLL_WINDOW_MS = 15_000;
 
-export function MealFeed({ refreshKey }: MealFeedProps) {
+export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -45,6 +49,12 @@ export function MealFeed({ refreshKey }: MealFeedProps) {
   const [loadError, setLoadError] = useState<string>();
   const [deletingMealId, setDeletingMealId] = useState<string>();
   const [requestVersion, setRequestVersion] = useState(0);
+  const [isPdfSyncing, setIsPdfSyncing] = useState(false);
+  const hasLoadedMeals = useRef(false);
+  const pageRef = useRef(page);
+  const pollingIntervalRef = useRef<number>();
+  const pollingTimeoutRef = useRef<number>();
+  const pollingRequestRef = useRef<AbortController>();
   const today = useMemo(() => formatLocalDate(new Date()), []);
 
   useEffect(() => {
@@ -52,43 +62,122 @@ export function MealFeed({ refreshKey }: MealFeedProps) {
   }, [refreshKey]);
 
   useEffect(() => {
-    const controller = new AbortController();
+    pageRef.current = page;
+  }, [page]);
 
-    async function loadMeals() {
-      setIsLoading(true);
+  const fetchMeals = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!hasLoadedMeals.current) {
+        setIsLoading(true);
+      }
       setLoadError(undefined);
       try {
-        const params = new URLSearchParams({
-          startDate: today,
-          endDate: today,
-          page: String(page),
-          size: String(PAGE_SIZE),
-          sort: "consumedAt,desc",
-        });
+        const requestedPage = pageRef.current;
+        const params = mealQuery(today, requestedPage, PAGE_SIZE);
         const response = await apiClient<MealPageResponse>(`/api/meals?${params.toString()}`, {
-          signal: controller.signal,
+          signal,
         });
         setMeals(response.content);
         setTotalPages(response.totalPages);
-        const responsePage = response.number ?? response.page ?? page;
-        if (responsePage !== page) {
+        const responsePage = response.number ?? response.page ?? requestedPage;
+        if (responsePage !== requestedPage) {
           setPage(responsePage);
         }
+        hasLoadedMeals.current = true;
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (isAbortError(error)) {
           return;
         }
         setLoadError(error instanceof ApiError ? error.detail : "Meals could not be loaded.");
       } finally {
-        if (!controller.signal.aborted) {
+        if (!signal?.aborted) {
           setIsLoading(false);
         }
       }
-    }
+    },
+    [today],
+  );
 
-    void loadMeals();
+  const fetchAllTodayMeals = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const allMeals: Meal[] = [];
+        let requestedPage = 0;
+        let availablePages = 1;
+
+        do {
+          const params = mealQuery(today, requestedPage, TOTALS_PAGE_SIZE);
+          const response = await apiClient<MealPageResponse>(`/api/meals?${params.toString()}`, {
+            signal,
+          });
+          allMeals.push(...response.content);
+          availablePages = response.totalPages;
+          requestedPage += 1;
+        } while (requestedPage < availablePages);
+
+        onTodayMealsChange(allMeals);
+      } catch (error) {
+        if (!isAbortError(error)) {
+          // Preserve the last known totals when a background aggregate refresh fails.
+        }
+      }
+    },
+    [onTodayMealsChange, today],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetchMeals(controller.signal);
     return () => controller.abort();
-  }, [page, refreshKey, requestVersion, today]);
+  }, [fetchMeals, page, refreshKey, requestVersion]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetchAllTodayMeals(controller.signal);
+    return () => controller.abort();
+  }, [fetchAllTodayMeals, refreshKey, requestVersion]);
+
+  useEffect(() => {
+    const stopPolling = () => {
+      if (pollingIntervalRef.current !== undefined) {
+        window.clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = undefined;
+      }
+      if (pollingTimeoutRef.current !== undefined) {
+        window.clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = undefined;
+      }
+      pollingRequestRef.current?.abort();
+      pollingRequestRef.current = undefined;
+      setIsPdfSyncing(false);
+    };
+
+    const pollMeals = () => {
+      pollingRequestRef.current?.abort();
+      const controller = new AbortController();
+      pollingRequestRef.current = controller;
+      void Promise.all([
+        fetchMeals(controller.signal),
+        fetchAllTodayMeals(controller.signal),
+      ]);
+    };
+
+    const handlePdfImportQueued = () => {
+      stopPolling();
+      setIsPdfSyncing(true);
+      pollMeals();
+      pollingIntervalRef.current = window.setInterval(pollMeals, PDF_POLL_INTERVAL_MS);
+      pollingTimeoutRef.current = window.setTimeout(stopPolling, PDF_POLL_WINDOW_MS);
+    };
+
+    window.addEventListener("pdfImportQueued", handlePdfImportQueued);
+    return () => {
+      window.removeEventListener("pdfImportQueued", handlePdfImportQueued);
+      stopPolling();
+    };
+  }, [fetchAllTodayMeals, fetchMeals]);
 
   const deleteMeal = async (mealId: string) => {
     if (deletingMealId) {
@@ -116,20 +205,23 @@ export function MealFeed({ refreshKey }: MealFeedProps) {
 
   if (loadError && meals.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
-        <div className="max-w-sm text-center">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">
-            <AlertCircle className="h-5 w-5" aria-hidden />
-          </span>
-          <p className="mt-4 text-sm font-semibold text-zinc-900">Unable to load meals</p>
-          <p className="mt-1.5 text-sm text-zinc-500">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => setRequestVersion((version) => version + 1)}
-            className="mt-4 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50"
-          >
-            Try again
-          </button>
+      <div className="flex flex-1 flex-col">
+        <PdfSyncIndicator active={isPdfSyncing} />
+        <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
+          <div className="max-w-sm text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+              <AlertCircle className="h-5 w-5" aria-hidden />
+            </span>
+            <p className="mt-4 text-sm font-semibold text-zinc-900">Unable to load meals</p>
+            <p className="mt-1.5 text-sm text-zinc-500">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => setRequestVersion((version) => version + 1)}
+              className="mt-4 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+            >
+              Try again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -137,13 +229,18 @@ export function MealFeed({ refreshKey }: MealFeedProps) {
 
   if (meals.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
-        <div className="flex max-w-sm flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-400 shadow-sm">
-            <UtensilsCrossed className="h-6 w-6" aria-hidden />
-          </span>
-          <h3 className="mt-5 text-base font-semibold text-zinc-900">Your meal timeline is empty</h3>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">Meals will appear here</p>
+      <div className="flex flex-1 flex-col">
+        <PdfSyncIndicator active={isPdfSyncing} />
+        <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
+          <div className="flex max-w-sm flex-col items-center text-center">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-400 shadow-sm">
+              <UtensilsCrossed className="h-6 w-6" aria-hidden />
+            </span>
+            <h3 className="mt-5 text-base font-semibold text-zinc-900">
+              Your meal timeline is empty
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">Meals will appear here</p>
+          </div>
         </div>
       </div>
     );
@@ -151,6 +248,7 @@ export function MealFeed({ refreshKey }: MealFeedProps) {
 
   return (
     <div className="flex flex-1 flex-col">
+      <PdfSyncIndicator active={isPdfSyncing} />
       <div className="flex-1 space-y-3 p-4 sm:p-5">
         {loadError && (
           <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
@@ -193,6 +291,27 @@ export function MealFeed({ refreshKey }: MealFeedProps) {
       </nav>
     </div>
   );
+}
+
+function PdfSyncIndicator({ active }: { active: boolean }) {
+  if (!active) {
+    return null;
+  }
+
+  return (
+    <div
+      className="flex items-center gap-2 border-b border-indigo-100 bg-indigo-50/60 px-5 py-2 text-xs font-medium text-indigo-700"
+      role="status"
+      aria-live="polite"
+    >
+      <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" aria-hidden />
+      Syncing background data...
+    </div>
+  );
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
 }
 
 function MealCard({
@@ -334,6 +453,16 @@ function formatLocalDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function mealQuery(date: string, page: number, size: number): URLSearchParams {
+  return new URLSearchParams({
+    startDate: date,
+    endDate: date,
+    page: String(page),
+    size: String(size),
+    sort: "consumedAt,desc",
+  });
 }
 
 function formatMacro(value: number): string {

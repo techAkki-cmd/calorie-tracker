@@ -5,19 +5,29 @@ import type { HealthGoal } from "@/lib/healthGoalTypes";
 
 type GoalMetricsPanelProps = {
   goals: HealthGoal;
+  currentCalories: number;
+  currentProtein: number;
+  currentCarbs: number;
+  currentFat: number;
 };
 
-export function GoalMetricsPanel({ goals }: GoalMetricsPanelProps) {
+export function GoalMetricsPanel({
+  goals,
+  currentCalories,
+  currentProtein,
+  currentCarbs,
+  currentFat,
+}: GoalMetricsPanelProps) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-zinc-100 bg-zinc-50/70 p-4">
-        <CalorieRing consumed={0} target={goals.dailyCalorieTarget} />
+        <CalorieRing consumed={currentCalories} target={goals.dailyCalorieTarget} />
       </div>
 
       <div className="space-y-2.5">
-        <MacroBar label="Protein" consumed={0} target={goals.proteinTarget} />
-        <MacroBar label="Carbs" consumed={0} target={goals.carbTarget} />
-        <MacroBar label="Fat" consumed={0} target={goals.fatTarget} />
+        <MacroBar label="Protein" consumed={currentProtein} target={goals.proteinTarget} />
+        <MacroBar label="Carbs" consumed={currentCarbs} target={goals.carbTarget} />
+        <MacroBar label="Fat" consumed={currentFat} target={goals.fatTarget} />
       </div>
 
       <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/70 px-3.5 py-3">

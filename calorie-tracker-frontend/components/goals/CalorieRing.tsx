@@ -8,7 +8,8 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
   const strokeWidth = 7;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = target > 0 ? Math.min(consumed / target, 1) : 0;
+  const progress = target > 0 ? Math.min(Math.max(consumed / target, 0), 1) : 0;
+  const consumedPercent = target > 0 ? Math.round((consumed / target) * 100) : 0;
   const dashOffset = circumference * (1 - progress);
 
   return (
@@ -16,7 +17,9 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
       <div>
         <p className="text-xs font-medium text-zinc-500">Calories</p>
         <p className="mt-1 text-sm font-semibold text-zinc-900">Daily energy</p>
-        <p className="mt-2 text-[0.65rem] uppercase tracking-wider text-zinc-400">0% consumed</p>
+        <p className="mt-2 text-[0.65rem] uppercase tracking-wider text-zinc-400">
+          {consumedPercent}% consumed
+        </p>
       </div>
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">

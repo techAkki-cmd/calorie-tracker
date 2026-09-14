@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
 import { TodayMealsCard } from "@/components/dashboard/TodayMealsCard";
 import { GoalSettingsCard } from "@/components/GoalSettingsCard";
+import { Toast } from "@/components/feedback/Toast";
+import type { Meal } from "@/components/meals/MealFeed";
 import { useAuth } from "@/context/AuthContext";
 import { useHealthGoals } from "@/hooks/useHealthGoals";
 
@@ -20,10 +22,34 @@ function DashboardHome() {
   const { user } = useAuth();
   const goalsState = useHealthGoals();
   const [mealsRevision, setMealsRevision] = useState(0);
+  const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
+  const [showPdfQueuedToast, setShowPdfQueuedToast] = useState(false);
   const identity = user?.email ?? user?.id;
   const refreshMeals = useCallback(() => {
     setMealsRevision((revision) => revision + 1);
   }, []);
+  const showPdfQueuedNotification = useCallback(() => {
+    setShowPdfQueuedToast(true);
+  }, []);
+  const dismissPdfQueuedNotification = useCallback(() => {
+    setShowPdfQueuedToast(false);
+  }, []);
+  const updateTodayMeals = useCallback((meals: Meal[]) => {
+    setTodayMeals(meals);
+  }, []);
+  const dailyTotals = useMemo(
+    () =>
+      todayMeals.reduce(
+        (totals, meal) => ({
+          calories: totals.calories + Number(meal.calories),
+          protein: totals.protein + Number(meal.protein),
+          carbs: totals.carbs + Number(meal.carbs),
+          fat: totals.fat + Number(meal.fat),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
+      ),
+    [todayMeals],
+  );
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -39,7 +65,12 @@ function DashboardHome() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
         <DashboardMetrics />
-        <TodayMealsCard refreshKey={mealsRevision} onMealCreated={refreshMeals} />
+        <TodayMealsCard
+          refreshKey={mealsRevision}
+          onMealCreated={refreshMeals}
+          onPdfQueued={showPdfQueuedNotification}
+          onTodayMealsChange={updateTodayMeals}
+        />
         <aside className="md:col-span-1" aria-label="Goal settings">
           <GoalSettingsCard
             goals={goalsState.goals}
@@ -56,9 +87,19 @@ function DashboardHome() {
             onDraftChange={goalsState.updateDraftField}
             onSave={goalsState.saveGoals}
             onDismissSaveError={goalsState.dismissSaveError}
+            currentCalories={dailyTotals.calories}
+            currentProtein={dailyTotals.protein}
+            currentCarbs={dailyTotals.carbs}
+            currentFat={dailyTotals.fat}
           />
         </aside>
       </div>
+      {showPdfQueuedToast && (
+        <Toast
+          message="PDF uploaded successfully. Extracting meals in the background..."
+          onDismiss={dismissPdfQueuedNotification}
+        />
+      )}
     </section>
   );
 }

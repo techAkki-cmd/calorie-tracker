@@ -26,6 +26,8 @@ type MealDraft = {
 type MealFieldErrors = Partial<Record<keyof MealDraft, string>>;
 
 type NutritionExtractionResponse = {
+  name?: string;
+  foodName?: string;
   calories: number;
   protein: number;
   carbs: number;
@@ -145,8 +147,10 @@ export function MealLogModal({ open, onClose, onMealCreated }: MealLogModalProps
         method: "POST",
         body: formData,
       });
+      const extractedName = (extraction.foodName ?? extraction.name)?.trim();
       setDraft((current) => ({
         ...current,
+        name: extractedName || current.name,
         calories: String(extraction.calories),
         protein: formatNumber(extraction.protein),
         carbs: formatNumber(extraction.carbs),

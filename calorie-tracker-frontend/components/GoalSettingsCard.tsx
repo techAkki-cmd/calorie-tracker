@@ -20,6 +20,10 @@ type GoalSettingsCardProps = {
   onDraftChange: (field: keyof HealthGoalDraft, value: string) => void;
   onSave: () => void;
   onDismissSaveError: () => void;
+  currentCalories: number;
+  currentProtein: number;
+  currentCarbs: number;
+  currentFat: number;
 };
 
 export function GoalSettingsCard({
@@ -37,6 +41,10 @@ export function GoalSettingsCard({
   onDraftChange,
   onSave,
   onDismissSaveError,
+  currentCalories,
+  currentProtein,
+  currentCarbs,
+  currentFat,
 }: GoalSettingsCardProps) {
   return (
     <section className="card overflow-hidden">
@@ -78,7 +86,13 @@ export function GoalSettingsCard({
         )}
         {loadState === "ready" && goals && (
           <div>
-            <GoalMetricsPanel goals={goals} />
+            <GoalMetricsPanel
+              goals={goals}
+              currentCalories={currentCalories}
+              currentProtein={currentProtein}
+              currentCarbs={currentCarbs}
+              currentFat={currentFat}
+            />
             {saveStatus === "saving" && (
               <p className="mt-3 text-center text-xs text-zinc-400">Syncing targets…</p>
             )}
