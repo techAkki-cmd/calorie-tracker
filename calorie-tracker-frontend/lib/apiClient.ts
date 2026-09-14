@@ -2,6 +2,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 export const ACCESS_TOKEN_STORAGE_KEY = "calorie-tracker.accessToken";
 export const ACCESS_TOKEN_CHANGED_EVENT = "calorie-tracker.access-token-changed";
+export const AUTH_EXPIRED_EVENT = "auth:expired";
 
 type ProblemDetail = {
   status?: number;
@@ -77,7 +78,7 @@ export async function apiClient<T>(path: string, init: ApiRequestInit = {}): Pro
   });
 
   if (!response.ok) {
-    throw await toApiError(path, response);
+    throw await toApiError(response);
   }
 
   if (response.status === 204) {
@@ -94,6 +95,13 @@ export async function apiClient<T>(path: string, init: ApiRequestInit = {}): Pro
 
 function notifyAccessTokenChanged(): void {
   window.dispatchEvent(new Event(ACCESS_TOKEN_CHANGED_EVENT));
+}
+
+function notifyAuthExpired(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT));
 }
 
 function serializeRequestBody(body: ApiRequestInit["body"]): {
@@ -130,15 +138,16 @@ function isPlainJsonBody(body: unknown): body is Record<string, unknown> | unkno
   return true;
 }
 
-async function toApiError(path: string, response: Response): Promise<ApiError> {
+async function toApiError(response: Response): Promise<ApiError> {
   const problem = await readProblemDetail(response);
   const status = problem.status ?? response.status;
   const title = problem.title ?? defaultTitleForStatus(status);
   const detail = problem.detail ?? defaultDetailForStatus(status);
   const fieldErrors = problem.errors ?? {};
 
-  if (status === 401 && !path.startsWith("/api/auth/")) {
+  if (status === 401) {
     clearAccessToken();
+    notifyAuthExpired();
   }
 
   return new ApiError(status, title, detail, fieldErrors);

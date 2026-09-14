@@ -2,7 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, clearAccessToken, readAccessToken, writeAccessToken } from "@/lib/apiClient";
+import { jwtDecode } from "jwt-decode";
+import {
+  apiClient,
+  AUTH_EXPIRED_EVENT,
+  clearAccessToken,
+  readAccessToken,
+  writeAccessToken,
+} from "@/lib/apiClient";
 import type { AuthResponse, AuthStatus, AuthUser } from "@/lib/authTypes";
 
 const AUTH_USER_STORAGE_KEY = "calorie-tracker.user";
@@ -17,6 +24,10 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+type AccessTokenClaims = {
+  exp?: number;
+};
 
 function readStoredUser(): AuthUser | null {
   if (typeof window === "undefined") {
@@ -53,6 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>("hydrating");
 
+  const logout = useCallback(() => {
+    clearSession();
+    setAccessToken(null);
+    setUser(null);
+    setStatus("anonymous");
+    router.replace("/login");
+  }, [router]);
+
   useEffect(() => {
     const token = readAccessToken();
     if (!token) {
@@ -61,10 +80,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("anonymous");
       return;
     }
+    try {
+      const { exp } = jwtDecode<AccessTokenClaims>(token);
+      if (typeof exp !== "number" || exp * 1000 <= Date.now()) {
+        clearSession();
+        setAccessToken(null);
+        setUser(null);
+        setStatus("anonymous");
+        return;
+      }
+    } catch {
+      clearSession();
+      setAccessToken(null);
+      setUser(null);
+      setStatus("anonymous");
+      return;
+    }
+    const storedUser = readStoredUser();
+    if (!storedUser) {
+      clearSession();
+      setAccessToken(null);
+      setUser(null);
+      setStatus("anonymous");
+      return;
+    }
     setAccessToken(token);
-    setUser(readStoredUser());
+    setUser(storedUser);
     setStatus("authenticated");
   }, []);
+
+  useEffect(() => {
+    const handleAuthExpired = () => logout();
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+  }, [logout]);
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await apiClient<AuthResponse>("/api/auth/login", {
@@ -84,14 +133,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     await login(email, password);
   }, [login]);
-
-  const logout = useCallback(() => {
-    clearSession();
-    setAccessToken(null);
-    setUser(null);
-    setStatus("anonymous");
-    router.push("/login");
-  }, [router]);
 
   const value = useMemo(
     () => ({ accessToken, user, status, login, register, logout }),

@@ -53,11 +53,13 @@ function DashboardHome() {
             loadError={goalsState.loadError}
             saveError={goalsState.saveError}
             saveStatus={goalsState.saveStatus}
+            isSaving={goalsState.isSaving}
             isEditing={goalsState.isEditing}
             onStartEditing={goalsState.startEditing}
             onCancelEditing={goalsState.cancelEditing}
             onDraftChange={goalsState.updateDraftField}
             onSave={goalsState.saveGoals}
+            onDismissSaveError={goalsState.dismissSaveError}
           />
         </div>
       </div>

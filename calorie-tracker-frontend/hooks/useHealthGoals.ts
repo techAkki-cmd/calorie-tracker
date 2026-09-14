@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, apiClient } from "@/lib/apiClient";
 import type {
   HealthGoal,
@@ -34,6 +34,8 @@ export function useHealthGoals() {
   const [loadError, setLoadError] = useState<string | undefined>();
   const [saveError, setSaveError] = useState<string | undefined>();
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [isSaving, setIsSaving] = useState(false);
+  const saveInFlightRef = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const loadGoals = useCallback(async () => {
@@ -62,6 +64,9 @@ export function useHealthGoals() {
   }, [loadGoals]);
 
   const startEditing = () => {
+    if (saveInFlightRef.current) {
+      return;
+    }
     setFieldErrors({});
     setSaveError(undefined);
     setSaveStatus("idle");
@@ -70,6 +75,9 @@ export function useHealthGoals() {
   };
 
   const cancelEditing = () => {
+    if (saveInFlightRef.current) {
+      return;
+    }
     setFieldErrors({});
     setSaveError(undefined);
     setDraft(goals ? draftFromGoal(goals) : EMPTY_GOAL_DRAFT);
@@ -78,9 +86,14 @@ export function useHealthGoals() {
 
   const updateDraftField = (field: keyof HealthGoalDraft, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
+    setSaveError(undefined);
   };
 
   const saveGoals = async () => {
+    if (saveInFlightRef.current) {
+      return;
+    }
+
     const { fieldErrors: nextErrors, parsed } = validateGoalDraft(draft);
     setFieldErrors(nextErrors);
     setSaveError(undefined);
@@ -88,9 +101,9 @@ export function useHealthGoals() {
       return;
     }
 
-    const previousGoals = goals;
-    setGoals(parsed);
-    setIsEditing(false);
+    const submittedDraft = { ...draft };
+    saveInFlightRef.current = true;
+    setIsSaving(true);
     setSaveStatus("saving");
 
     try {
@@ -107,10 +120,10 @@ export function useHealthGoals() {
       const committed = toHealthGoal(response);
       setGoals(committed);
       setDraft(draftFromGoal(committed));
+      setIsEditing(false);
       setSaveStatus("saved");
     } catch (error) {
-      setGoals(previousGoals);
-      setDraft(previousGoals ? draftFromGoal(previousGoals) : draft);
+      setDraft(submittedDraft);
       setIsEditing(true);
       setSaveStatus("idle");
       if (error instanceof ApiError) {
@@ -125,8 +138,13 @@ export function useHealthGoals() {
         return;
       }
       setSaveError("Goals could not be saved. Please try again.");
+    } finally {
+      saveInFlightRef.current = false;
+      setIsSaving(false);
     }
   };
+
+  const dismissSaveError = () => setSaveError(undefined);
 
   return {
     goals,
@@ -136,10 +154,12 @@ export function useHealthGoals() {
     loadError,
     saveError,
     saveStatus,
+    isSaving,
     isEditing,
     startEditing,
     cancelEditing,
     updateDraftField,
     saveGoals,
+    dismissSaveError,
   };
 }
