@@ -14,16 +14,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -37,8 +31,10 @@ public class ChatInterfaceService {
             GET_SUMMARY (they ask what they ate or a daily recap),
             GENERAL_NUTRITION (anything else about food or nutrition).
             Reply with JSON only: intent, optional meal (name, mealType BREAKFAST|LUNCH|DINNER|SNACKS, \
-            quantity, calories integer, protein, carbs, fat grams) when intent is LOG_MEAL, \
-            optional reply (short spoken answer) when intent is GENERAL_NUTRITION.""";
+            quantity, calories integer, protein, carbs, fat grams, consumedAtISO ISO-8601 with offset) when intent is LOG_MEAL, \
+            optional reply (short spoken answer) when intent is GENERAL_NUTRITION.
+            Preserve historical times from the message. Resolve relative dates using the supplied UTC
+            reference time. Assume UTC if no timezone is given; date-only meals use midnight UTC.""";
 
     private static final String SUMMARIZE_PROMPT = """
             Write a brief conversational summary for the user using only this data. \
@@ -47,13 +43,15 @@ public class ChatInterfaceService {
     private static final Map<String, Object> MEAL_SCHEMA = Map.of(
             "type", "object",
             "properties", Map.of(
+                    "consumedAtISO", Map.of("type", "string"),
                     "name", Map.of("type", "string"),
                     "mealType", Map.of("type", "string"),
                     "quantity", Map.of("type", "string"),
                     "calories", Map.of("type", "integer"),
                     "protein", Map.of("type", "number"),
                     "carbs", Map.of("type", "number"),
-                    "fat", Map.of("type", "number")));
+                    "fat", Map.of("type", "number")),
+            "required", List.of("name", "mealType", "quantity", "calories", "protein", "carbs", "fat", "consumedAtISO"));
 
     private static final Map<String, Object> CLASSIFY_SCHEMA = Map.of(
             "type", "object",
@@ -65,31 +63,31 @@ public class ChatInterfaceService {
                     "reply", Map.of("type", "string")),
             "required", List.of("intent"));
 
-    private static final Set<String> MEAL_TYPES = Set.of("BREAKFAST", "LUNCH", "DINNER", "SNACKS");
-
     private final WebClient geminiWebClient;
     private final ObjectMapper objectMapper;
     private final CoreMealClient coreMealClient;
     private final String model;
+    private final jakarta.validation.Validator validator;
 
     public ChatInterfaceService(@Qualifier("geminiWebClient") WebClient geminiWebClient,
                                 ObjectMapper objectMapper,
                                 CoreMealClient coreMealClient,
-                                @Value("${gemini.model}") String model) {
+                                @Value("${gemini.model}") String model, jakarta.validation.Validator validator) {
         this.geminiWebClient = geminiWebClient;
         this.objectMapper = objectMapper;
         this.coreMealClient = coreMealClient;
         this.model = model;
+        this.validator = validator;
     }
 
-    public String handleChat(UUID userId, String userMessage) {
+    public String handleChat(UUID userId, String userMessage, String requestId) {
         if (userMessage == null || userMessage.isBlank()) {
             throw AiExtractionException.badRequest("A chat message is required");
         }
 
         ChatClassification classification = classify(userMessage);
         return switch (classification.resolvedIntent()) {
-            case LOG_MEAL -> logMeal(userId, classification.meal());
+            case LOG_MEAL -> logMeal(userId, classification.meal(), requestId);
             case CHECK_GOALS -> summarize("goals and today's meals", fetchGoalsAndToday(userId));
             case GET_SUMMARY -> summarize("today's meals", fetchTodayMeals(userId));
             case GENERAL_NUTRITION -> generalReply(userMessage, classification.reply());
@@ -109,13 +107,11 @@ public class ChatInterfaceService {
         }
     }
 
-    private String logMeal(UUID userId, NutritionDiaryItem meal) {
-        if (!isUsableMeal(meal)) {
-            return "I can log that, but I need a food name, meal type (breakfast, lunch, dinner, or snacks), "
-                    + "quantity, and calories with protein, carbs, and fat.";
+    private String logMeal(UUID userId, NutritionDiaryItem meal, String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            throw AiExtractionException.badRequest("A stable request ID is required for meal logging");
         }
-
-        ImportedMealRequest request = toImportedMeal(meal);
+        ImportedMealRequest request = MealValidation.meal(validator, userId, meal, "chat:" + requestId);
         coreMealClient.postMeal(userId, request);
         return "Logged " + request.name() + " (" + request.calories() + " kcal) as " + request.mealType() + ".";
     }
@@ -133,7 +129,7 @@ public class ChatInterfaceService {
     }
 
     private String fetchTodayMeals(UUID userId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(java.time.ZoneOffset.UTC);
         return coreMealClient.listMealsRaw(userId, today, today);
     }
 
@@ -144,7 +140,7 @@ public class ChatInterfaceService {
 
     private String generateJson(String userMessage) {
         return firstText(Map.of(
-                "systemInstruction", Map.of("parts", List.of(Map.of("text", SYSTEM_PROMPT))),
+                "systemInstruction", Map.of("parts", List.of(Map.of("text", SYSTEM_PROMPT + "\nUTC reference time: " + java.time.Instant.now()))),
                 "contents", List.of(Map.of(
                         "role", "user",
                         "parts", List.of(Map.of("text", userMessage)))),
@@ -173,37 +169,6 @@ public class ChatInterfaceService {
             throw AiExtractionException.badGateway("The model returned no usable content");
         }
         return text;
-    }
-
-    private static boolean isUsableMeal(NutritionDiaryItem item) {
-        if (item == null || item.name() == null || item.name().isBlank()) {
-            return false;
-        }
-        if (item.mealType() == null || !MEAL_TYPES.contains(item.mealType().toUpperCase(Locale.ROOT))) {
-            return false;
-        }
-        return item.quantity() != null && !item.quantity().isBlank()
-                && item.calories() != null
-                && item.protein() != null
-                && item.carbs() != null
-                && item.fat() != null;
-    }
-
-    private static ImportedMealRequest toImportedMeal(NutritionDiaryItem item) {
-        return new ImportedMealRequest(
-                item.name().trim(),
-                item.mealType().toUpperCase(Locale.ROOT),
-                item.quantity().trim(),
-                item.calories(),
-                scale(item.protein()),
-                scale(item.carbs()),
-                scale(item.fat()),
-                null,
-                LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
-    }
-
-    private static BigDecimal scale(Double value) {
-        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
     }
 
     private static String stripFences(String json) {

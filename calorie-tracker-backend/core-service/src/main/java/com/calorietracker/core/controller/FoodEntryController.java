@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,8 +62,8 @@ public class FoodEntryController {
 
         return foodEntryService.getEntriesByTimeRange(
                 userId,
-                startDate.atStartOfDay(),
-                endDate.atTime(LocalTime.MAX),
+                startDate.atStartOfDay().toInstant(ZoneOffset.UTC),
+                endDate.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC),
                 mealType,
                 pageable);
     }

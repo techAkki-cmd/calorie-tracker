@@ -33,7 +33,8 @@ public class AiExtractionController {
 
     @PostMapping("/chat")
     public ChatResponse chat(@RequestHeader("X-User-Id") UUID userId,
+                             @RequestHeader("Idempotency-Key") UUID requestId,
                              @Valid @RequestBody ChatRequest request) {
-        return new ChatResponse(chatInterfaceService.handleChat(userId, request.message()));
+        return new ChatResponse(chatInterfaceService.handleChat(userId, request.message(), requestId.toString()));
     }
 }

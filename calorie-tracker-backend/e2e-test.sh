@@ -5,8 +5,8 @@ BASE="${BASE:-http://localhost:9080}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 EMAIL="e2e-$(date +%s)@example.com"
 PASSWORD="password12"
-TODAY="$(date +%F)"
-CONSUMED_AT="$(date +"%Y-%m-%dT%H:%M:%S")"
+TODAY="$(date -u +%F)"
+CONSUMED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -30,7 +30,7 @@ python3 - "$DIR" <<'PY'
 from pathlib import Path
 import sys
 base = Path(sys.argv[1])
-text = "BREAKFAST Oatmeal 1 bowl calories 320 protein 10 carbs 54 fat 6"
+text = "2025-01-01T08:00:00Z BREAKFAST Oatmeal 1 bowl calories 320 protein 10 carbs 54 fat 6"
 content = f"BT /F1 12 Tf 50 700 Td ({text}) Tj ET"
 stream = content.encode("latin-1")
 
@@ -104,7 +104,7 @@ request GET /api/analytics/weekly
 python3 -c 'import json,sys; b=json.loads(sys.argv[1]); assert len(b["days"])==7, b; print("days", len(b["days"]))' "$BODY"
 
 echo "== POST ai chat =="
-request POST /api/ai/chat -H "Content-Type: application/json" \
+request POST /api/ai/chat -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
   -d '{"message":"I just logged my breakfast, how are my calories looking today?"}'
 python3 -c 'import json,sys; r=json.loads(sys.argv[1])["reply"]; assert r; print(r[:240])' "$BODY"
 
@@ -118,7 +118,7 @@ echo "== sleep 15 for RabbitMQ + Gemini =="
 sleep 15
 
 echo "== GET meals today =="
-request GET "/api/meals?startDate=$TODAY&endDate=$TODAY&size=100"
+request GET "/api/meals?startDate=2025-01-01&endDate=$TODAY&size=100"
 python3 -c 'import json,sys; b=json.loads(sys.argv[1]); n=b.get("totalElements",0); print("totalElements", n); assert n>=2, b' "$BODY"
 
 echo "E2E PASS"

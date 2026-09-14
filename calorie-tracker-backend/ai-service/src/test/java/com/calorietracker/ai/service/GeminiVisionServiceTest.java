@@ -100,7 +100,7 @@ class GeminiVisionServiceTest {
     @Test
     void mapsDiaryArrayToItems() {
         String body = envelope("""
-                [{"name":"Oatmeal","mealType":"BREAKFAST","quantity":"1 bowl","calories":320,"protein":10,"carbs":54,"fat":6}]
+                [{"name":"Oatmeal","mealType":"BREAKFAST","quantity":"1 bowl","calories":320,"protein":10,"carbs":54,"fat":6,"consumedAtISO":"2026-01-01T08:00:00Z"}]
                 """);
 
         var items = serviceReturning(HttpStatus.OK, body).parseNutritionDiary("oatmeal for breakfast");
@@ -115,7 +115,7 @@ class GeminiVisionServiceTest {
     void stripsMarkdownFencesAroundDiaryArray() {
         String body = envelope("""
                 ```json
-                [{"name":"Apple","mealType":"SNACKS","quantity":"1","calories":95,"protein":0.5,"carbs":25,"fat":0.3}]
+                [{"name":"Apple","mealType":"SNACKS","quantity":"1","calories":95,"protein":0.5,"carbs":25,"fat":0.3,"consumedAtISO":"2026-01-01T08:00:00Z"}]
                 ```
                 """);
 
@@ -128,12 +128,12 @@ class GeminiVisionServiceTest {
     @Test
     void acceptsItemsEnvelopeWhenArrayIsWrapped() {
         String body = envelope("""
-                {"items":[{"name":"Rice","mealType":"lunch","quantity":"1 cup","calories":200,"protein":4,"carbs":45,"fat":0.5}]}
+                {"items":[{"name":"Rice","mealType":"lunch","quantity":"1 cup","calories":200,"protein":4,"carbs":45,"fat":0.5,"consumedAtISO":"2026-01-01T08:00:00Z"}]}
                 """);
 
         var items = serviceReturning(HttpStatus.OK, body).parseNutritionDiary("rice");
 
-        assertThat(items.getFirst().mealType()).isEqualTo("LUNCH");
+        assertThat(items.getFirst().mealType()).isEqualTo("lunch");
     }
 
     @Test
@@ -145,18 +145,16 @@ class GeminiVisionServiceTest {
     }
 
     @Test
-    void dropsRowsWithUnknownMealType() {
+    void rejectsWholeDiaryWithInvalidRow() {
         String body = envelope("""
                 [
                   {"name":"Mystery","mealType":"BRUNCH","quantity":"1","calories":1,"protein":1,"carbs":1,"fat":1},
-                  {"name":"Eggs","mealType":"BREAKFAST","quantity":"2","calories":140,"protein":12,"carbs":1,"fat":10}
+                  {"name":"Eggs","mealType":"BREAKFAST","quantity":"2","calories":140,"protein":12,"carbs":1,"fat":10,"consumedAtISO":"2026-01-01T08:00:00Z"}
                 ]
                 """);
 
-        var items = serviceReturning(HttpStatus.OK, body).parseNutritionDiary("diary");
-
-        assertThat(items).extracting(com.calorietracker.ai.dto.NutritionDiaryItem::name)
-                .containsExactly("Eggs");
+        assertThatThrownBy(() -> serviceReturning(HttpStatus.OK, body).parseNutritionDiary("diary"))
+                .isInstanceOf(jakarta.validation.ConstraintViolationException.class);
     }
 
     @Test
@@ -169,6 +167,7 @@ class GeminiVisionServiceTest {
         assertThat(capturedBody.get()).doesNotContain("inline_data");
         assertThat(capturedBody.get()).contains("eggs toast");
         assertThat(capturedBody.get()).contains("BREAKFAST");
+        assertThat(capturedBody.get()).contains("Preserve historical dates", "consumedAtISO");
     }
 
     @Test
@@ -195,7 +194,7 @@ class GeminiVisionServiceTest {
                 .exchangeFunction(exchange)
                 .build();
 
-        return new GeminiVisionService(webClient, MAPPER, "gemini-2.5-flash");
+        return new GeminiVisionService(webClient, MAPPER, "gemini-2.5-flash", com.calorietracker.ai.TestValidation.VALIDATOR);
     }
 
     /**

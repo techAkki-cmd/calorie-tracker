@@ -14,7 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +35,10 @@ public class AnalyticsService {
 
     @Transactional(readOnly = true)
     public WeeklyReportDto getWeeklyReport(UUID userId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
         LocalDate startDate = today.minusDays(WINDOW_DAYS - 1);
-        LocalDateTime from = startDate.atStartOfDay();
-        LocalDateTime to = today.plusDays(1).atStartOfDay();
+        Instant from = startDate.atStartOfDay().toInstant(ZoneOffset.UTC);
+        Instant to = today.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
 
         List<DailySummaryDto> days = fillMissingDays(
                 foodEntryRepository.sumMacrosByDay(userId, from, to).stream()

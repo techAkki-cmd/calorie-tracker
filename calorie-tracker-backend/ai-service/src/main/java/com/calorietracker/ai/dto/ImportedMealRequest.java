@@ -1,7 +1,7 @@
 package com.calorietracker.ai.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * JSON body posted to core-service {@code POST /api/meals/bulk}. Field names match
@@ -16,6 +16,7 @@ public record ImportedMealRequest(
         BigDecimal carbs,
         BigDecimal fat,
         String micronutrientSummary,
-        LocalDateTime consumedAt
+        Instant consumedAt,
+        String idempotencyKey
 ) {
 }

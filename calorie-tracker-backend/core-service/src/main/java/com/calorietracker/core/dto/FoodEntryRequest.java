@@ -11,7 +11,7 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record FoodEntryRequest(
 
@@ -51,6 +51,9 @@ public record FoodEntryRequest(
 
         @NotNull
         @PastOrPresent
-        LocalDateTime consumedAt
+        Instant consumedAt,
+
+        @jakarta.validation.constraints.Pattern(regexp = "[a-f0-9]{64}")
+        String idempotencyKey
 ) {
 }

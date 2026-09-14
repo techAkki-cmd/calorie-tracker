@@ -2,6 +2,9 @@ package com.calorietracker.ai.config;
 
 import com.calorietracker.ai.messaging.PdfUploadMessage;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.support.converter.DefaultJacksonJavaTypeMapper;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -22,7 +25,25 @@ public class RabbitMQConfig {
      */
     @Bean
     public Queue pdfUploadQueue() {
-        return QueueBuilder.durable(PDF_UPLOAD_QUEUE).build();
+        return QueueBuilder.durable(PDF_UPLOAD_QUEUE)
+                .deadLetterExchange("pdf.upload.dlx")
+                .deadLetterRoutingKey("pdf.upload.failed").build();
+    }
+
+    @Bean
+    public DirectExchange pdfDeadLetterExchange() {
+        return new DirectExchange("pdf.upload.dlx", true, false);
+    }
+
+    @Bean
+    public Queue pdfDeadLetterQueue() {
+        return QueueBuilder.durable("pdf.upload.dlq").build();
+    }
+
+    @Bean
+    public Binding pdfDeadLetterBinding() {
+        return BindingBuilder.bind(pdfDeadLetterQueue()).to(pdfDeadLetterExchange())
+                .with("pdf.upload.failed");
     }
 
     /**

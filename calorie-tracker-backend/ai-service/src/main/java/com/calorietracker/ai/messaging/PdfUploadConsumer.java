@@ -5,22 +5,23 @@ import com.calorietracker.ai.config.RabbitMQConfig;
 import com.calorietracker.ai.dto.ImportedMealRequest;
 import com.calorietracker.ai.dto.NutritionDiaryItem;
 import com.calorietracker.ai.exception.AiExtractionException;
+import com.calorietracker.ai.service.MealValidation;
+import jakarta.validation.Validator;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.channels.FileChannel;
 import com.calorietracker.ai.pdf.PdfParserUtil;
 import com.calorietracker.ai.service.GeminiVisionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,42 +33,66 @@ public class PdfUploadConsumer {
     private final PdfParserUtil pdfParserUtil;
     private final GeminiVisionService geminiVisionService;
     private final CoreMealClient coreMealClient;
+    private final Validator validator;
+    private final ObjectMapper objectMapper;
 
     public PdfUploadConsumer(@Value("${pdf.import-dir}") String importDir,
                              PdfParserUtil pdfParserUtil,
                              GeminiVisionService geminiVisionService,
-                             CoreMealClient coreMealClient) {
+                             CoreMealClient coreMealClient, Validator validator, ObjectMapper objectMapper) {
         this.importDir = Path.of(importDir).toAbsolutePath().normalize();
         this.pdfParserUtil = pdfParserUtil;
         this.geminiVisionService = geminiVisionService;
         this.coreMealClient = coreMealClient;
+        this.validator = validator;
+        this.objectMapper = objectMapper;
     }
 
     @RabbitListener(queues = RabbitMQConfig.PDF_UPLOAD_QUEUE)
-    public void receivePdfUpload(PdfUploadMessage message) {
-        Path filePath = null;
-        try {
-            filePath = resolveImportPath(message.fileReference());
-            byte[] pdf = Files.readAllBytes(filePath);
-            String text = pdfParserUtil.extractText(pdf);
-            List<ImportedMealRequest> meals = toImportedMeals(geminiVisionService.parseNutritionDiary(text));
-            coreMealClient.postBulk(message.userId(), meals);
-            log.info("Imported {} meals from {} for user {}", meals.size(), message.fileReference(),
-                    message.userId());
-        } catch (AiExtractionException | WebClientResponseException | WebClientRequestException | IOException
-                 | IllegalStateException ex) {
-            // Do not rethrow: a hallucinated JSON payload would otherwise retry forever.
-            log.warn("Failed to import PDF {} for user {}: {}",
-                    message.fileReference(), message.userId(), ex.getMessage());
-        } finally {
-            if (filePath != null) {
-                try {
-                    Files.deleteIfExists(filePath);
-                } catch (IOException cleanupFailure) {
-                    log.error("Could not remove processed PDF {}", message.fileReference(), cleanupFailure);
-                }
+    public void receivePdfUpload(PdfUploadMessage message) throws IOException {
+        Files.createDirectories(importDir);
+        Path lockPath = importDir.resolve(MealValidation.hash(message.userId() + ":" + message.fileReference()) + ".lock");
+        try (var channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+             var lock = channel.lock()) {
+            processLocked(message);
+        }
+    }
+
+    private void processLocked(PdfUploadMessage message) throws IOException {
+        if (message.userId() == null) {
+            throw AiExtractionException.badRequest("An import user is required");
+        }
+        Path manifest = importDir.resolve(MealValidation.hash(message.userId() + ":" + message.fileReference())
+                + ".meals.json");
+        List<ImportedMealRequest> meals;
+        if (Files.exists(manifest)) {
+            meals = objectMapper.readValue(Files.readString(manifest), new TypeReference<>() {});
+        } else {
+            Path pdf = resolveImportPath(message.fileReference());
+            String text = pdfParserUtil.extractText(Files.readAllBytes(pdf));
+            List<NutritionDiaryItem> items = geminiVisionService.parseNutritionDiary(text);
+            meals = new ArrayList<>(items.size());
+            for (int index = 0; index < items.size(); index++) {
+                meals.add(MealValidation.meal(validator, message.userId(), items.get(index),
+                        "pdf:" + message.fileReference() + ":" + index));
+            }
+            // Publish an immutable extraction snapshot before the first database write.
+            Path temporary = Files.createTempFile(importDir, "extraction-", ".tmp");
+            try {
+                Files.writeString(temporary, objectMapper.writeValueAsString(meals));
+                Files.move(temporary, manifest, StandardCopyOption.ATOMIC_MOVE);
+            } finally {
+                Files.deleteIfExists(temporary);
             }
         }
+        coreMealClient.postBulk(message.userId(), meals);
+        // Keep the snapshot for replay after a commit/ack crash; preserve the PDF on failure.
+        try {
+            Files.deleteIfExists(resolveImportPath(message.fileReference()));
+        } catch (AiExtractionException | IOException cleanupFailure) {
+            log.warn("Import completed; PDF cleanup unavailable for {}", message.fileReference());
+        }
+        log.info("Imported {} meals for user {}", meals.size(), message.userId());
     }
 
     /**
@@ -94,25 +119,4 @@ public class PdfUploadConsumer {
         return resolved;
     }
 
-    private static List<ImportedMealRequest> toImportedMeals(List<NutritionDiaryItem> items) {
-        LocalDateTime consumedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        List<ImportedMealRequest> meals = new ArrayList<>(items.size());
-        for (NutritionDiaryItem item : items) {
-            meals.add(new ImportedMealRequest(
-                    item.name(),
-                    item.mealType(),
-                    item.quantity(),
-                    item.calories(),
-                    scale(item.protein()),
-                    scale(item.carbs()),
-                    scale(item.fat()),
-                    null,
-                    consumedAt));
-        }
-        return meals;
-    }
-
-    private static BigDecimal scale(Double value) {
-        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
-    }
 }

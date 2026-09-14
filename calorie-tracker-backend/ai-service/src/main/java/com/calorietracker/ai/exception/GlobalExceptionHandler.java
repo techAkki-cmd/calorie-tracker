@@ -14,6 +14,12 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @Slf4j
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    ProblemDetail handleInvalidModelOutput(jakarta.validation.ConstraintViolationException ex) {
+        return problem(HttpStatus.BAD_GATEWAY, "Invalid AI output",
+                "The AI provider returned invalid nutrition values");
+    }
+
     @ExceptionHandler(AiExtractionException.class)
     ProblemDetail handleExtractionFailure(AiExtractionException ex) {
         return problem(ex.getStatus(), "Nutrition extraction failed", ex.getMessage());

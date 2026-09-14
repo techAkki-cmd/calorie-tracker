@@ -21,12 +21,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(
         name = "food_entries",
+        uniqueConstraints = @jakarta.persistence.UniqueConstraint(
+                name = "uq_food_entry_user_idempotency", columnNames = {"user_id", "idempotency_key"}),
         indexes = @Index(name = "idx_food_entries_user_consumed_at",
                          columnList = "user_id, consumed_at")
 )
@@ -46,6 +47,9 @@ public class FoodEntry {
 
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
+
+    @Column(name = "idempotency_key", length = 64)
+    private String idempotencyKey;
 
     @Column(nullable = false)
     private String name;
@@ -73,7 +77,7 @@ public class FoodEntry {
     private String micronutrientSummary;
 
     @Column(name = "consumed_at", nullable = false)
-    private LocalDateTime consumedAt;
+    private Instant consumedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

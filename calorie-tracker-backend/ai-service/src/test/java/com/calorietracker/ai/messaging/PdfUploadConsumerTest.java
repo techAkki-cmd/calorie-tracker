@@ -35,7 +35,8 @@ class PdfUploadConsumerTest {
     void setUp() {
         gemini = new RecordingGemini();
         coreClient = new RecordingCoreClient();
-        consumer = new PdfUploadConsumer(importDir.toString(), new PdfParserUtil(), gemini, coreClient);
+        consumer = new PdfUploadConsumer(importDir.toString(), new PdfParserUtil(), gemini, coreClient, com.calorietracker.ai.TestValidation.VALIDATOR,
+                new ObjectMapper());
     }
 
     @Test
@@ -56,13 +57,39 @@ class PdfUploadConsumerTest {
     }
 
     @Test
-    void doesNotRethrowWhenGeminiFails() throws Exception {
+    void propagatesFailureAndPreservesPdfForDeadLetterReplay() throws Exception {
         Files.write(importDir.resolve("diary.pdf"), PdfParserUtilTest.pdfWithText("bad diary"));
         gemini.fail = true;
 
-        consumer.receivePdfUpload(new PdfUploadMessage(UUID.randomUUID(), "diary.pdf"));
-
+        assertThatThrownBy(() -> consumer.receivePdfUpload(new PdfUploadMessage(UUID.randomUUID(), "diary.pdf")))
+                .isInstanceOf(AiExtractionException.class);
         assertThat(coreClient.batches).isEmpty();
+        assertThat(importDir.resolve("diary.pdf")).exists();
+    }
+
+    @Test
+    void replaysSnapshotWithoutCallingGeminiAfterSuccessfulImport() throws Exception {
+        Files.write(importDir.resolve("diary.pdf"), PdfParserUtilTest.pdfWithText("Oatmeal"));
+        var message = new PdfUploadMessage(UUID.randomUUID(), "diary.pdf");
+        consumer.receivePdfUpload(message);
+        gemini.fail = true;
+        consumer.receivePdfUpload(message);
+        assertThat(coreClient.batches).hasSize(2);
+        assertThat(coreClient.batches.get(0)).isEqualTo(coreClient.batches.get(1));
+    }
+
+    @Test
+    void coreFailurePreservesSnapshotForReplay() throws Exception {
+        Files.write(importDir.resolve("diary.pdf"), PdfParserUtilTest.pdfWithText("Oatmeal"));
+        var message = new PdfUploadMessage(UUID.randomUUID(), "diary.pdf");
+        coreClient.fail = true;
+        assertThatThrownBy(() -> consumer.receivePdfUpload(message))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(importDir.resolve("diary.pdf")).exists();
+        coreClient.fail = false;
+        gemini.fail = true;
+        consumer.receivePdfUpload(message);
+        assertThat(coreClient.batches).hasSize(1);
         assertThat(importDir.resolve("diary.pdf")).doesNotExist();
     }
 
@@ -86,7 +113,7 @@ class PdfUploadConsumerTest {
         private boolean fail;
 
         private RecordingGemini() {
-            super(WebClient.builder().build(), new ObjectMapper(), "gemini-2.5-flash");
+            super(WebClient.builder().build(), new ObjectMapper(), "gemini-2.5-flash", com.calorietracker.ai.TestValidation.VALIDATOR);
         }
 
         @Override
@@ -95,12 +122,13 @@ class PdfUploadConsumerTest {
             if (fail) {
                 throw AiExtractionException.badGateway("hallucinated json");
             }
-            return List.of(new NutritionDiaryItem("Oatmeal", "BREAKFAST", "1 bowl", 320, 10.0, 54.0, 6.0));
+            return List.of(new NutritionDiaryItem("Oatmeal", "BREAKFAST", "1 bowl", 320, 10.0, 54.0, 6.0, "2026-01-01T08:00:00Z"));
         }
     }
 
     private static final class RecordingCoreClient extends CoreMealClient {
 
+        private boolean fail;
         private final List<UUID> userIds = new ArrayList<>();
         private final List<List<ImportedMealRequest>> batches = new ArrayList<>();
 
@@ -110,6 +138,7 @@ class PdfUploadConsumerTest {
 
         @Override
         public void postBulk(UUID userId, List<ImportedMealRequest> meals) {
+            if (fail) throw new IllegalStateException("core unavailable");
             userIds.add(userId);
             batches.add(List.copyOf(meals));
         }

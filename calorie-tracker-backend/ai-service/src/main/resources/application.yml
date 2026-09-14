@@ -7,6 +7,9 @@ spring:
   application:
     name: ai-service
   rabbitmq:
+    listener:
+      simple:
+        default-requeue-rejected: false
     host: localhost
     port: 9672
     username: calorie_user

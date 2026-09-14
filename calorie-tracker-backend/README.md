@@ -33,19 +33,67 @@ Configure container gateway routes and `CORE_SERVICE_BASE_URL` to service DNS
 names rather than localhost. AI needs an additional egress-capable network to
 reach Gemini.
 
-## PDF file ownership
+## PDF delivery and replay
 
-Core and AI must share `PDF_IMPORT_DIR`. Core deletes partial/unpublished files
-in a finally block when saving or publishing fails. Once queued, the consumer
-owns the file and deletes it in finally after processing, including failures.
-Deleting it immediately after publishing is unsafe because the message contains
-only a file reference, not the PDF bytes.
+Core and AI must share a persistent `PDF_IMPORT_DIR` supporting file locks and
+atomic renames. A per-upload lock serializes snapshot creation. Failed processing
+throws to RabbitMQ; `default-requeue-rejected=false` routes rejects through
+`pdf.upload.dlx` (routing key `pdf.upload.failed`) to durable `pdf.upload.dlq`.
+Both services declare identical topology.
 
-This bounds retention for completed attempts, not abandoned jobs after a process
-crash. Durable job tracking, broker confirms, idempotency, and a retention
-reconciler remain necessary for crash-safe import delivery. Existing failure
-acknowledgement behavior is retained.
+Existing queues cannot have declaration arguments changed in place. Before
+rollout, stop publishers/consumers, drain or export the old queue, then recreate
+it with the new DLX arguments and restore any saved messages. Do not delete a
+nonempty queue. This change does not migrate your running broker automatically.
 
-Gemini and AI-to-core blocking calls have a 15-second limit per call. Chat input
-is limited to 500 characters. Changes take effect after services are rebuilt
-and restarted; updating Compose does not reconfigure already running containers.
+Core removes unpublished files on failure. AI retains failed PDFs and writes
+an immutable validated extraction snapshot before posting meals. Successful
+processing removes the PDF but retains the snapshot and lock file. Redelivery
+reuses the snapshot and the same meal keys, including after a database commit
+followed by a consumer crash. Fix the underlying failure, then republish the
+original DLQ body to the main queue; never construct a new upload ID for replay.
+Retain snapshots/failed PDFs for your supported replay window and purge them
+only after associated jobs are resolved. Broker publisher confirms and an
+outbox remain separate delivery guarantees not introduced by this change.
+
+## Idempotency and timestamps
+
+AI-generated meal keys are SHA-256 hashes scoped to the user and source:
+PDF upload reference plus row position, or chat request ID. This deliberately
+avoids wall-clock processing time and model-generated names, which can change
+on retries. Duplicate keys are ignored atomically by PostgreSQL, scoped to
+`(user_id, idempotency_key)`; the first committed values win. Ordinary manual
+meals can omit the key. Two identical meals in different uploads remain separate.
+
+Chat callers must send a UUID `Idempotency-Key` header and reuse it for retries
+of the same operation; use a new UUID for a new meal. A chat validation error is
+returned as HTTP 502, since HTTP chat has no RabbitMQ message to dead-letter.
+Invalid PDF extraction throws and reaches the DLQ. All diary rows must be valid;
+invalid rows are never silently dropped.
+
+`consumedAt` is now an ISO instant/offset timestamp, e.g.
+`2025-01-01T19:00:00Z`. Offset-free legacy API timestamps are no longer accepted.
+Gemini must return `consumedAtISO` with historical times preserved; date-only
+entries use midnight UTC and absent timezone context defaults to UTC. Undated
+PDF entries fail validation instead of being assigned today's date. Relative
+chat dates use the UTC reference time supplied to the model.
+
+Daily listing and weekly summaries use UTC calendar days, not the host timezone.
+User-local calendar summaries would require an explicit timezone parameter.
+Before starting this version against existing data, stop writers, back up the
+database, and apply `migrations/001_food_entry_utc_idempotency.sql` with the
+**actual legacy timezone**. Hibernate cannot infer that timezone. Do not apply
+this legacy migration to a freshly generated or already migrated schema.
+
+## Verification
+
+Run `mvn test` under Java 21. The PostgreSQL persistence test is opt-in via
+`TEST_POSTGRES_URL` and requires a disposable database with username `postgres`
+and password `test-only`; it recreates the schema. It checks concurrent retries,
+user-scoped keys, persistence, and UTC aggregation. Never point it at user data.
+The opt-in broker test uses `TEST_RABBIT_PORT` on localhost against a disposable
+RabbitMQ instance with default guest credentials to verify actual DLQ routing.
+
+Gemini and AI-to-core calls retain their 15-second per-call limits and chat its
+500-character limit. Rebuild/restart services after the migration and broker
+rollout; existing processes are not changed by editing this repository.

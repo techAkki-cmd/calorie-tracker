@@ -4,7 +4,6 @@ import com.calorietracker.core.model.MealType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record FoodEntryResponse(
@@ -18,7 +17,7 @@ public record FoodEntryResponse(
         BigDecimal carbs,
         BigDecimal fat,
         String micronutrientSummary,
-        LocalDateTime consumedAt,
+        Instant consumedAt,
         Instant createdAt,
         Instant updatedAt
 ) {

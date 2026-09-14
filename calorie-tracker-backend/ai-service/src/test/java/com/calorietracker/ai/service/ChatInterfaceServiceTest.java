@@ -32,10 +32,10 @@ class ChatInterfaceServiceTest {
     void logsMealAndCallsCore() {
         RecordingCoreClient core = new RecordingCoreClient();
         ChatInterfaceService service = service(core, envelope("""
-                {"intent":"LOG_MEAL","meal":{"name":"Eggs","mealType":"BREAKFAST","quantity":"2","calories":140,"protein":12,"carbs":1,"fat":10}}
+                {"intent":"LOG_MEAL","meal":{"name":"Eggs","mealType":"BREAKFAST","quantity":"2","calories":140,"protein":12,"carbs":1,"fat":10,"consumedAtISO":"2026-01-01T08:00:00Z"}}
                 """));
 
-        String reply = service.handleChat(USER, "I ate eggs");
+        String reply = service.handleChat(USER, "I ate eggs", "request-1");
 
         assertThat(reply).contains("Eggs").contains("140");
         assertThat(core.posted).hasSize(1);
@@ -52,9 +52,8 @@ class ChatInterfaceServiceTest {
                 {"intent":"LOG_MEAL","meal":{"name":"Something"}}
                 """));
 
-        String reply = service.handleChat(USER, "I ate something");
-
-        assertThat(reply).contains("need a food name");
+        assertThatThrownBy(() -> service.handleChat(USER, "I ate something", "request-1"))
+                .isInstanceOf(jakarta.validation.ConstraintViolationException.class);
         assertThat(core.posted).isEmpty();
     }
 
@@ -75,7 +74,7 @@ class ChatInterfaceServiceTest {
                     .build());
         });
 
-        String reply = service.handleChat(USER, "how are my goals?");
+        String reply = service.handleChat(USER, "how are my goals?", "request-1");
 
         assertThat(reply).contains("2000");
         assertThat(core.goalsLookedUp).isTrue();
@@ -91,7 +90,7 @@ class ChatInterfaceServiceTest {
                 {"intent":"GENERAL_NUTRITION","reply":"Protein helps repair muscle."}
                 """));
 
-        String reply = service.handleChat(USER, "why is protein important?");
+        String reply = service.handleChat(USER, "why is protein important?", "request-1");
 
         assertThat(reply).isEqualTo("Protein helps repair muscle.");
         assertThat(core.posted).isEmpty();
@@ -104,7 +103,7 @@ class ChatInterfaceServiceTest {
         RecordingCoreClient core = new RecordingCoreClient();
         ChatInterfaceService service = service(core, envelope("not-json"));
 
-        assertThatThrownBy(() -> service.handleChat(USER, "hello"))
+        assertThatThrownBy(() -> service.handleChat(USER, "hello", "request-1"))
                 .isInstanceOf(AiExtractionException.class)
                 .hasMessageContaining("could not be parsed as a chat intent");
     }
@@ -116,7 +115,7 @@ class ChatInterfaceServiceTest {
                 {"intent":"UNKNOWN_THING","reply":"I can help with meals and goals."}
                 """));
 
-        String reply = service.handleChat(USER, "xyz");
+        String reply = service.handleChat(USER, "xyz", "request-1");
 
         assertThat(reply).contains("meals and goals");
         assertThat(core.posted).isEmpty();
@@ -134,7 +133,7 @@ class ChatInterfaceServiceTest {
                 .baseUrl("https://gemini.test/v1beta")
                 .exchangeFunction(exchange)
                 .build();
-        return new ChatInterfaceService(gemini, MAPPER, core, "gemini-2.5-flash");
+        return new ChatInterfaceService(gemini, MAPPER, core, "gemini-2.5-flash", com.calorietracker.ai.TestValidation.VALIDATOR);
     }
 
     private static String envelope(String modelText) {

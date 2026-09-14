@@ -16,13 +16,10 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 @Slf4j
@@ -33,9 +30,12 @@ public class GeminiVisionService {
             Reply with JSON only: calories (kcal, integer), protein, carbs, fat (grams).""";
 
     private static final String DIARY_PROMPT = """
-            Parse this nutrition diary into JSON only: an array of objects with name, mealType \
-            (BREAKFAST, LUNCH, DINNER, SNACKS), quantity, calories (integer kcal), \
-            protein, carbs, fat (grams).""";
+            Parse this nutrition diary into JSON only: an array of objects with name, mealType
+            (BREAKFAST, LUNCH, DINNER, SNACKS), quantity, calories (integer kcal),
+            protein, carbs, fat (grams), consumedAtISO (ISO-8601 with an explicit offset).
+            Preserve historical dates and times from the diary; use UTC if no timezone is given.
+            For date-only entries use midnight UTC. Never invent a missing date.
+            Preserve source order and include each source meal exactly once.""";
 
     private static final Map<String, Object> IMAGE_SCHEMA = Map.of(
             "type", "object",
@@ -49,6 +49,7 @@ public class GeminiVisionService {
     private static final Map<String, Object> DIARY_ITEM_SCHEMA = Map.of(
             "type", "object",
             "properties", Map.of(
+                    "consumedAtISO", Map.of("type", "string"),
                     "name", Map.of("type", "string"),
                     "mealType", Map.of("type", "string"),
                     "quantity", Map.of("type", "string"),
@@ -56,7 +57,7 @@ public class GeminiVisionService {
                     "protein", Map.of("type", "number"),
                     "carbs", Map.of("type", "number"),
                     "fat", Map.of("type", "number")),
-            "required", List.of("name", "mealType", "quantity", "calories", "protein", "carbs", "fat"));
+            "required", List.of("name", "mealType", "quantity", "calories", "protein", "carbs", "fat", "consumedAtISO"));
 
     private static final Map<String, Object> DIARY_SCHEMA = Map.of(
             "type", "array",
@@ -65,18 +66,18 @@ public class GeminiVisionService {
     private static final TypeReference<List<NutritionDiaryItem>> DIARY_LIST_TYPE = new TypeReference<>() {
     };
 
-    private static final Set<String> MEAL_TYPES = Set.of("BREAKFAST", "LUNCH", "DINNER", "SNACKS");
-
     private final WebClient geminiWebClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final jakarta.validation.Validator validator;
 
     public GeminiVisionService(@Qualifier("geminiWebClient") WebClient geminiWebClient,
                                ObjectMapper objectMapper,
-                               @Value("${gemini.model}") String model) {
+                               @Value("${gemini.model}") String model, jakarta.validation.Validator validator) {
         this.geminiWebClient = geminiWebClient;
         this.objectMapper = objectMapper;
         this.model = model;
+        this.validator = validator;
     }
 
     public NutritionExtractionResponse extractNutritionFromImage(MultipartFile image) {
@@ -92,7 +93,7 @@ public class GeminiVisionService {
 
         String json = generateJson(diaryRequestBody(text));
         List<NutritionDiaryItem> parsed = parseDiaryItems(json);
-        List<NutritionDiaryItem> usable = retainUsableRows(parsed);
+        List<NutritionDiaryItem> usable = validateDiaryRows(parsed);
         if (usable.isEmpty()) {
             throw AiExtractionException.badGateway("The model returned no usable diary entries");
         }
@@ -154,7 +155,8 @@ public class GeminiVisionService {
 
     private NutritionExtractionResponse parseNutrition(String json) {
         try {
-            return objectMapper.readValue(stripFences(json), NutritionExtractionResponse.class);
+            return MealValidation.validate(validator,
+                    objectMapper.readValue(stripFences(json), NutritionExtractionResponse.class));
         } catch (JacksonException ex) {
             log.warn("Gemini returned content that is not valid nutrition JSON: {}", ex.getMessage());
             throw AiExtractionException.badGateway("The model response could not be parsed as nutrition data");
@@ -184,29 +186,11 @@ public class GeminiVisionService {
         }
     }
 
-    private List<NutritionDiaryItem> retainUsableRows(List<NutritionDiaryItem> items) {
-        List<NutritionDiaryItem> usable = new ArrayList<>();
+    private List<NutritionDiaryItem> validateDiaryRows(List<NutritionDiaryItem> items) {
         for (NutritionDiaryItem item : items) {
-            if (item == null || item.name() == null || item.name().isBlank()) {
-                continue;
-            }
-            if (item.mealType() == null || !MEAL_TYPES.contains(item.mealType().toUpperCase(Locale.ROOT))) {
-                continue;
-            }
-            if (item.quantity() == null || item.quantity().isBlank() || item.calories() == null
-                    || item.protein() == null || item.carbs() == null || item.fat() == null) {
-                continue;
-            }
-            usable.add(new NutritionDiaryItem(
-                    item.name().trim(),
-                    item.mealType().toUpperCase(Locale.ROOT),
-                    item.quantity().trim(),
-                    item.calories(),
-                    item.protein(),
-                    item.carbs(),
-                    item.fat()));
+            MealValidation.validate(validator, item);
         }
-        return usable;
+        return List.copyOf(items);
     }
 
     static String stripFences(String json) {

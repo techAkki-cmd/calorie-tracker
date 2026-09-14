@@ -7,7 +7,7 @@ import java.util.Locale;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ChatClassification(
         String intent,
-        NutritionDiaryItem meal,
+        @jakarta.validation.Valid NutritionDiaryItem meal,
         String reply
 ) {
 
