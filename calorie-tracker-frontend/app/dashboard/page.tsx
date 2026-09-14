@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
 import { TodayMealsCard } from "@/components/dashboard/TodayMealsCard";
@@ -18,7 +19,11 @@ export default function DashboardPage() {
 function DashboardHome() {
   const { user } = useAuth();
   const goalsState = useHealthGoals();
+  const [, setMealsRevision] = useState(0);
   const identity = user?.email ?? user?.id;
+  const refreshMeals = useCallback(() => {
+    setMealsRevision((revision) => revision + 1);
+  }, []);
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -34,7 +39,7 @@ function DashboardHome() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
         <DashboardMetrics />
-        <TodayMealsCard />
+        <TodayMealsCard onMealCreated={refreshMeals} />
         <aside className="md:col-span-1" aria-label="Goal settings">
           <GoalSettingsCard
             goals={goalsState.goals}
