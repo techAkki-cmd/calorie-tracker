@@ -1,10 +1,11 @@
 "use client";
 
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
+import { TodayMealsCard } from "@/components/dashboard/TodayMealsCard";
 import { GoalSettingsCard } from "@/components/GoalSettingsCard";
 import { useAuth } from "@/context/AuthContext";
 import { useHealthGoals } from "@/hooks/useHealthGoals";
-import { formatGoalNumber } from "@/lib/healthGoalValidation";
 
 export default function DashboardPage() {
   return (
@@ -17,34 +18,24 @@ export default function DashboardPage() {
 function DashboardHome() {
   const { user } = useAuth();
   const goalsState = useHealthGoals();
-  const goals = goalsState.goals;
+  const identity = user?.email ?? user?.id;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-ink-subtle">Dashboard</p>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-        {user?.email ? `Welcome, ${user.email}` : "Welcome"}
-      </h1>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
-        Track meals against your daily targets.
-      </p>
+    <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <header>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">Overview</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
+          {identity ? `Welcome back, ${identity}` : "Welcome back"}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+          Your nutrition analytics and daily goals, organized in one focused workspace.
+        </p>
+      </header>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <QuickStats
-            calories={goals?.dailyCalorieTarget ?? null}
-            protein={goals?.proteinTarget ?? null}
-            carbs={goals?.carbTarget ?? null}
-            fat={goals?.fatTarget ?? null}
-          />
-          <section className="min-h-[22rem] rounded-lg border border-dashed border-line bg-white p-6 shadow-hairline">
-            <h2 className="text-sm font-semibold tracking-tight text-ink">Meals</h2>
-            <p className="mt-2 text-sm text-ink-muted">
-              Meals will appear here once logging is connected.
-            </p>
-          </section>
-        </div>
-        <div>
+      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <DashboardMetrics />
+        <TodayMealsCard />
+        <aside className="md:col-span-1" aria-label="Goal settings">
           <GoalSettingsCard
             goals={goalsState.goals}
             draft={goalsState.draft}
@@ -61,38 +52,8 @@ function DashboardHome() {
             onSave={goalsState.saveGoals}
             onDismissSaveError={goalsState.dismissSaveError}
           />
-        </div>
+        </aside>
       </div>
     </section>
-  );
-}
-
-function QuickStats({
-  calories,
-  protein,
-  carbs,
-  fat,
-}: {
-  calories: number | null;
-  protein: number | null;
-  carbs: number | null;
-  fat: number | null;
-}) {
-  const items = [
-    { label: "Calories", value: formatGoalNumber(calories, "kcal") },
-    { label: "Protein", value: formatGoalNumber(protein, "g") },
-    { label: "Carbs", value: formatGoalNumber(carbs, "g") },
-    { label: "Fat", value: formatGoalNumber(fat, "g") },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {items.map((item) => (
-        <div key={item.label} className="rounded-lg border border-line bg-white px-3 py-3 shadow-hairline">
-          <p className="text-xs text-ink-subtle">{item.label}</p>
-          <p className="mt-1 text-sm font-semibold text-ink">{item.value}</p>
-        </div>
-      ))}
-    </div>
   );
 }

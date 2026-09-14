@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { AppAuthProvider } from "@/components/AuthProvider";
-import { TopNav } from "@/components/TopNav";
+import { TopNav } from "@/components/layout/TopNav";
 import "./globals.css";
 
 const inter = Inter({
