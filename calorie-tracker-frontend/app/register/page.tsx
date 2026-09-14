@@ -17,7 +17,7 @@ function RegisterForm() {
   return (
     <AuthFormFields
       title="Create Account"
-      description="Register with an email and password. You will be signed in automatically."
+      description="Create your private workspace for smarter meal and nutrition tracking."
       submitLabel="Create Account"
       isSubmitting={form.isSubmitting}
       email={form.email}

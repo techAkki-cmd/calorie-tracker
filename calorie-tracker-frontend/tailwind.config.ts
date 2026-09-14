@@ -10,15 +10,16 @@ const config: Config = {
     extend: {
       colors: {
         canvas: "#FAFAFA",
+        surface: "#FFFFFF",
         ink: {
-          DEFAULT: "#18181B",
+          DEFAULT: "#09090B",
           muted: "#52525B",
           subtle: "#71717A",
         },
         line: "#E4E4E7",
         accent: {
-          DEFAULT: "#18181B",
-          hover: "#27272A",
+          DEFAULT: "#0F172A",
+          hover: "#1E293B",
         },
       },
       fontFamily: {
@@ -33,6 +34,8 @@ const config: Config = {
       },
       boxShadow: {
         hairline: "0 1px 0 0 rgb(24 24 27 / 0.04)",
+        panel: "0 1px 2px rgb(15 23 42 / 0.04), 0 16px 40px -24px rgb(15 23 42 / 0.22)",
+        focus: "0 0 0 3px rgb(15 23 42 / 0.12)",
       },
     },
   },

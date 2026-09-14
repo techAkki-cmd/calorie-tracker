@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
@@ -11,14 +12,30 @@ type AuthCardProps = {
 
 export function AuthCard({ title, description, children }: AuthCardProps) {
   return (
-    <section className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-10">
-      <div className="card w-full max-w-md rounded-xl p-8">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-500">
-          Calorie Tracker
+    <section className="auth-shell">
+      <div
+        className="pointer-events-none absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-slate-200/40 blur-3xl"
+        aria-hidden
+      />
+      <div className="w-full max-w-md">
+        <div className="surface-card overflow-hidden">
+          <div className="border-b border-zinc-100 px-6 py-7 sm:px-8 sm:py-8">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-slate-950 shadow-sm">
+              <Sparkles className="h-4 w-4" strokeWidth={1.8} aria-hidden />
+            </div>
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+              Calorie Tracker
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-zinc-950 sm:text-[1.75rem]">
+              {title}
+            </h1>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-500">{description}</p>
+          </div>
+          <div className="px-6 py-7 sm:px-8 sm:py-8">{children}</div>
+        </div>
+        <p className="mt-5 text-center text-xs leading-5 text-zinc-400">
+          Secure access to your private nutrition workspace
         </p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900">{title}</h1>
-        <p className="mt-2 text-sm leading-6 text-zinc-500">{description}</p>
-        <div className="mt-8">{children}</div>
       </div>
     </section>
   );
@@ -42,6 +59,8 @@ export function TextField({
   value,
   autoComplete,
   error,
+  leadingIcon,
+  disabled = false,
   onChange,
 }: {
   id: string;
@@ -50,26 +69,36 @@ export function TextField({
   value: string;
   autoComplete: string;
   error?: string;
+  leadingIcon?: ReactNode;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   const errorId = `${id}-error`;
   return (
     <label className="block">
       <span className="text-sm font-medium text-zinc-900">{label}</span>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        autoComplete={autoComplete}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : undefined}
-        onChange={(event) => onChange(event.target.value)}
-        className={cn(
-          "mt-1.5 w-full rounded-lg border bg-zinc-50/50 px-3 py-2.5 text-sm text-zinc-900 outline-none transition-shadow",
-          "placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-zinc-900",
-          error ? "border-red-500 focus:border-red-500 focus:ring-0" : "border-zinc-200",
+      <span className="relative mt-2 block">
+        {leadingIcon && (
+          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-zinc-400">
+            {leadingIcon}
+          </span>
         )}
-      />
+        <input
+          id={id}
+          type={type}
+          value={value}
+          autoComplete={autoComplete}
+          disabled={disabled}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          onChange={(event) => onChange(event.target.value)}
+          className={cn(
+            "form-input",
+            leadingIcon && "pl-10",
+            error && "border-red-400 focus:border-red-500 focus:ring-red-100",
+          )}
+        />
+      </span>
       <FieldError id={errorId} message={error} />
     </label>
   );
