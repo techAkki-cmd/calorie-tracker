@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -165,7 +166,7 @@ public class ChatInterfaceService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(GeminiGenerateContentResponse.class)
-                .block();
+                .block(Duration.ofSeconds(15));
 
         String text = response == null ? null : response.firstText().orElse(null);
         if (text == null || text.isBlank()) {

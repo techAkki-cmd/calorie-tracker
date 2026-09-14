@@ -45,17 +45,28 @@ public class PdfUploadConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.PDF_UPLOAD_QUEUE)
     public void receivePdfUpload(PdfUploadMessage message) {
+        Path filePath = null;
         try {
-            byte[] pdf = Files.readAllBytes(resolveImportPath(message.fileReference()));
+            filePath = resolveImportPath(message.fileReference());
+            byte[] pdf = Files.readAllBytes(filePath);
             String text = pdfParserUtil.extractText(pdf);
             List<ImportedMealRequest> meals = toImportedMeals(geminiVisionService.parseNutritionDiary(text));
             coreMealClient.postBulk(message.userId(), meals);
             log.info("Imported {} meals from {} for user {}", meals.size(), message.fileReference(),
                     message.userId());
-        } catch (AiExtractionException | WebClientResponseException | WebClientRequestException | IOException ex) {
+        } catch (AiExtractionException | WebClientResponseException | WebClientRequestException | IOException
+                 | IllegalStateException ex) {
             // Do not rethrow: a hallucinated JSON payload would otherwise retry forever.
             log.warn("Failed to import PDF {} for user {}: {}",
                     message.fileReference(), message.userId(), ex.getMessage());
+        } finally {
+            if (filePath != null) {
+                try {
+                    Files.deleteIfExists(filePath);
+                } catch (IOException cleanupFailure) {
+                    log.error("Could not remove processed PDF {}", message.fileReference(), cleanupFailure);
+                }
+            }
         }
     }
 

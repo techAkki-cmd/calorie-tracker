@@ -2,6 +2,8 @@ server:
   port: 9081
 
 spring:
+  profiles:
+    default: dev
   application:
     name: identity-service
   datasource:
@@ -18,5 +20,5 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  secret: ${JWT_SECRET:dev-only-secret-change-me-at-least-32-bytes-long}
+  secret: ${JWT_SECRET}
   expiration-ms: 86400000

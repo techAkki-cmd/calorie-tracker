@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -104,7 +105,7 @@ public class GeminiVisionService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(GeminiGenerateContentResponse.class)
-                .block();
+                .block(Duration.ofSeconds(15));
 
         String json = response == null ? null : response.firstText().orElse(null);
         if (json == null || json.isBlank()) {

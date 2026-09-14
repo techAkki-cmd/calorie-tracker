@@ -52,6 +52,7 @@ class PdfUploadConsumerTest {
         assertThat(meal.name()).isEqualTo("Oatmeal");
         assertThat(meal.mealType()).isEqualTo("BREAKFAST");
         assertThat(meal.consumedAt()).isNotNull();
+        assertThat(importDir.resolve("diary.pdf")).doesNotExist();
     }
 
     @Test
@@ -62,6 +63,7 @@ class PdfUploadConsumerTest {
         consumer.receivePdfUpload(new PdfUploadMessage(UUID.randomUUID(), "diary.pdf"));
 
         assertThat(coreClient.batches).isEmpty();
+        assertThat(importDir.resolve("diary.pdf")).doesNotExist();
     }
 
     @Test

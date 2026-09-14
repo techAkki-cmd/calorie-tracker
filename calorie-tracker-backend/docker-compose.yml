@@ -7,8 +7,8 @@ services:
       POSTGRES_USER: calorie_user
       POSTGRES_PASSWORD: calorie_pass
       POSTGRES_DB: calorie_tracker
-    ports:
-      - "9432:5432"
+    networks:
+      - backend
     volumes:
       # Postgres 18+ expects a single mount at /var/lib/postgresql, not .../data,
       # so that pg_upgrade --link can cross major versions without mount boundaries.
@@ -26,9 +26,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: calorie_user
       RABBITMQ_DEFAULT_PASS: calorie_pass
-    ports:
-      - "9672:5672"
-      - "19672:15672"
+    networks:
+      - backend
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -40,3 +39,7 @@ services:
 volumes:
   postgres-data:
   rabbitmq-data:
+
+networks:
+  backend:
+    internal: true

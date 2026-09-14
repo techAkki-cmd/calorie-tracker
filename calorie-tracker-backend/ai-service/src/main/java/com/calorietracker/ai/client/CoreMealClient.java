@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,7 +31,7 @@ public class CoreMealClient {
                 .bodyValue(meals)
                 .retrieve()
                 .toBodilessEntity()
-                .block();
+                .block(Duration.ofSeconds(15));
     }
 
     public void postMeal(UUID userId, ImportedMealRequest meal) {
@@ -41,7 +42,7 @@ public class CoreMealClient {
                 .bodyValue(meal)
                 .retrieve()
                 .toBodilessEntity()
-                .block();
+                .block(Duration.ofSeconds(15));
     }
 
     /**
@@ -58,7 +59,7 @@ public class CoreMealClient {
                 .header("X-User-Id", userId.toString())
                 .retrieve()
                 .bodyToMono(String.class)
-                .block();
+                .block(Duration.ofSeconds(15));
         return body == null || body.isBlank() ? "{\"content\":[]}" : body;
     }
 
@@ -75,7 +76,7 @@ public class CoreMealClient {
                     }
                     return response.bodyToMono(String.class).map(Optional::ofNullable);
                 })
-                .blockOptional()
+                .blockOptional(Duration.ofSeconds(15))
                 .orElseGet(Optional::empty);
     }
 }

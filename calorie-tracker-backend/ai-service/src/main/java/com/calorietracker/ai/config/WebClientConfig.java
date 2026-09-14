@@ -30,9 +30,14 @@ public class WebClientConfig {
     }
 
     @Bean
-    WebClient coreServiceWebClient(@Value("${core-service.base-url}") String baseUrl) {
+    WebClient coreServiceWebClient(@Value("${core-service.base-url}") String baseUrl,
+                                  @Value("${INTERNAL_API_KEY}") String internalApiKey) {
+        if (internalApiKey == null || internalApiKey.isBlank()) {
+            throw new IllegalArgumentException("INTERNAL_API_KEY must not be blank");
+        }
         return WebClient.builder()
                 .baseUrl(baseUrl)
+                .defaultHeader("X-Internal-Secret", internalApiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }

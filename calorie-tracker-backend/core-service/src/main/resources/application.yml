@@ -2,6 +2,8 @@ server:
   port: 9082
 
 spring:
+  profiles:
+    default: dev
   application:
     name: core-service
   datasource:

@@ -24,7 +24,7 @@ class JwtAuthenticationFilterTest {
     private static final String SECRET = "dev-only-secret-change-me-at-least-32-bytes-long";
     private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
 
-    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(KEY);
+    private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(KEY, "test-internal-key");
     private final AtomicReference<ServerWebExchange> routed = new AtomicReference<>();
 
     @Test
@@ -43,11 +43,14 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest
                 .get("/api/goals")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token(userId))
-                .header("X-User-Id", "spoofed-value"));
+                .header("X-User-Id", "spoofed-value")
+                .header("X-Internal-Secret", "attacker-key", "another-key"));
 
         filter.filter(exchange, this::capture).block();
 
         assertThat(routed.get().getRequest().getHeaders().get("X-User-Id")).containsExactly(userId);
+        assertThat(routed.get().getRequest().getHeaders().get("X-Internal-Secret"))
+                .containsExactly("test-internal-key");
     }
 
     @Test
@@ -116,6 +119,8 @@ class JwtAuthenticationFilterTest {
 
         assertThat(routed.get()).isNotNull();
         assertThat(routed.get().getRequest().getHeaders().getFirst("X-User-Id")).isNull();
+        assertThat(routed.get().getRequest().getHeaders().get("X-Internal-Secret"))
+                .containsExactly("test-internal-key");
     }
 
     private Mono<Void> capture(ServerWebExchange exchange) {

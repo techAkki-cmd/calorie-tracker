@@ -52,10 +52,22 @@ public class PdfImportController {
         if (!destination.startsWith(importDir)) {
             throw new IllegalArgumentException("Invalid import path");
         }
-        file.transferTo(destination);
-
-        pdfUploadProducer.sendPdfForProcessing(userId, storedName);
-        log.info("Queued PDF {} for user {}", storedName, userId);
-        return Map.of("fileReference", storedName, "status", "queued");
+        boolean queued = false;
+        try {
+            file.transferTo(destination);
+            pdfUploadProducer.sendPdfForProcessing(userId, storedName);
+            queued = true;
+            log.info("Queued PDF {} for user {}", storedName, userId);
+            return Map.of("fileReference", storedName, "status", "queued");
+        } finally {
+            // A queued message contains this path: ownership transfers to the consumer.
+            if (!queued) {
+                try {
+                    Files.deleteIfExists(destination);
+                } catch (IOException cleanupFailure) {
+                    log.error("Could not remove unpublished PDF {}", storedName, cleanupFailure);
+                }
+            }
+        }
     }
 }

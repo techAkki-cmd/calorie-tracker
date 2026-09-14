@@ -3,7 +3,7 @@ package com.calorietracker.gateway.filter;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -16,7 +16,6 @@ import reactor.core.publisher.Mono;
 import javax.crypto.SecretKey;
 
 @Component
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final String BEARER_PREFIX = "Bearer ";
@@ -24,6 +23,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final String PUBLIC_PATH_PREFIX = "/api/auth/";
 
     private final SecretKey jwtSigningKey;
+    private final String internalApiKey;
+
+    public JwtAuthenticationFilter(SecretKey jwtSigningKey,
+                                   @Value("${INTERNAL_API_KEY}") String internalApiKey) {
+        if (internalApiKey == null || internalApiKey.isBlank()) {
+            throw new IllegalArgumentException("INTERNAL_API_KEY must not be blank");
+        }
+        this.jwtSigningKey = jwtSigningKey;
+        this.internalApiKey = internalApiKey;
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -65,9 +74,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
      * Replaces any client-supplied {@code X-User-Id} so downstream services can only ever see the
      * value derived from a verified token.
      */
-    private static ServerWebExchange withUserId(ServerWebExchange exchange, String userId) {
+    private ServerWebExchange withUserId(ServerWebExchange exchange, String userId) {
         return exchange.mutate()
                 .request(request -> request.headers(headers -> {
+                    headers.set("X-Internal-Secret", internalApiKey);
                     if (userId == null) {
                         headers.remove(USER_ID_HEADER);
                     } else {
