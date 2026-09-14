@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, LogIn, LogOut, Sparkles, UserPlus } from "lucide-react";
+import { ArrowRight, ChevronDown, LogOut, Sparkles, UserPlus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/cn";
 
@@ -44,16 +44,18 @@ export function TopNav() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-zinc-200/50 bg-white/60 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
           href={isSignedIn ? "/dashboard" : "/"}
-          className="group flex items-center gap-3 text-zinc-950"
+          className="group flex items-center gap-2.5"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm transition-transform group-hover:-translate-y-0.5">
-            <Sparkles className="h-4 w-4" aria-hidden />
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-[0_8px_20px_-8px_rgba(79,70,229,0.8)] transition-transform duration-300 group-hover:rotate-6 group-hover:scale-105">
+            <Sparkles className="h-4 w-4 transition-transform duration-500 group-hover:rotate-12" aria-hidden />
           </span>
-          <span className="text-sm font-semibold tracking-tight sm:text-base">Calorie Tracker</span>
+          <span className="bg-gradient-to-r from-zinc-950 via-violet-800 to-indigo-600 bg-clip-text text-sm font-bold tracking-tight text-transparent sm:text-base">
+            CalorieTracker
+          </span>
         </Link>
 
         {isSignedIn ? (
@@ -104,18 +106,18 @@ export function TopNav() {
         ) : (
           <div className="flex items-center gap-2">
             <Link
+              href="/login"
+              className="group inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-white/70 hover:text-zinc-950"
+            >
+              Log in
+              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
+            </Link>
+            <Link
               href="/register"
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+              className="inline-flex h-9 items-center gap-2 rounded-lg bg-gradient-to-r from-zinc-950 to-slate-800 px-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_-10px_rgba(15,23,42,0.85)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-10px_rgba(15,23,42,0.95)]"
             >
               <UserPlus className="h-3.5 w-3.5" aria-hidden />
               <span className="hidden sm:inline">Register</span>
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-950 px-3 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-            >
-              <LogIn className="h-3.5 w-3.5" aria-hidden />
-              Log in
             </Link>
           </div>
         )}
