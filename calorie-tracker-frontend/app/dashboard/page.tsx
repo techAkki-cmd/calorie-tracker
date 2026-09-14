@@ -19,7 +19,7 @@ export default function DashboardPage() {
 function DashboardHome() {
   const { user } = useAuth();
   const goalsState = useHealthGoals();
-  const [, setMealsRevision] = useState(0);
+  const [mealsRevision, setMealsRevision] = useState(0);
   const identity = user?.email ?? user?.id;
   const refreshMeals = useCallback(() => {
     setMealsRevision((revision) => revision + 1);
@@ -39,7 +39,7 @@ function DashboardHome() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
         <DashboardMetrics />
-        <TodayMealsCard onMealCreated={refreshMeals} />
+        <TodayMealsCard refreshKey={mealsRevision} onMealCreated={refreshMeals} />
         <aside className="md:col-span-1" aria-label="Goal settings">
           <GoalSettingsCard
             goals={goalsState.goals}

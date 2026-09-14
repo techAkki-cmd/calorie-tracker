@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, UtensilsCrossed } from "lucide-react";
+import { Plus } from "lucide-react";
 import { MealLogModal } from "@/components/meals/MealLogModal";
+import { MealFeed } from "@/components/meals/MealFeed";
 
 type TodayMealsCardProps = {
+  refreshKey: number;
   onMealCreated: () => void;
 };
 
-export function TodayMealsCard({ onMealCreated }: TodayMealsCardProps) {
+export function TodayMealsCard({ refreshKey, onMealCreated }: TodayMealsCardProps) {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
   return (
@@ -29,15 +31,7 @@ export function TodayMealsCard({ onMealCreated }: TodayMealsCardProps) {
           </button>
         </header>
 
-        <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
-          <div className="flex max-w-sm flex-col items-center text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-400 shadow-sm">
-              <UtensilsCrossed className="h-6 w-6" aria-hidden />
-            </span>
-            <h3 className="mt-5 text-base font-semibold text-zinc-900">Your meal timeline is empty</h3>
-            <p className="mt-2 text-sm leading-6 text-zinc-500">Meals will appear here</p>
-          </div>
-        </div>
+        <MealFeed refreshKey={refreshKey} />
       </section>
       <MealLogModal
         open={isLogModalOpen}
