@@ -81,18 +81,26 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
   const pollingTimeoutRef = useRef<number>();
   const pollingRequestRef = useRef<AbortController>();
   const { date: today, timezone } = useLocalDay();
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [startDate, setStartDate] = useState(() => shiftDate(today, -6));
+  const [endDate, setEndDate] = useState(today);
   const [mealTypeFilter, setMealTypeFilter] = useState<MealTypeFilter>("ALL");
   const previousTodayRef = useRef(today);
+  const rangeError = startDate > endDate ? "Start date must be on or before end date." : undefined;
 
   useEffect(() => {
-    if (selectedDate === previousTodayRef.current) {
-      setSelectedDate(today);
+    const previousToday = previousTodayRef.current;
+    if (endDate === previousToday) {
+      const usedRollingWeek = startDate === shiftDate(previousToday, -6);
+      setEndDate(today);
+      if (usedRollingWeek) {
+        setStartDate(shiftDate(today, -6));
+      }
     }
     previousTodayRef.current = today;
-  }, [selectedDate, today]);
+  }, [endDate, startDate, today]);
 
   useEffect(() => {
+    pageRef.current = 0;
     setPage(0);
   }, [refreshKey]);
 
@@ -109,7 +117,8 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
       try {
         const requestedPage = pageRef.current;
         const params = mealQuery(
-          selectedDate,
+          startDate,
+          endDate,
           timezone,
           requestedPage,
           PAGE_SIZE,
@@ -136,15 +145,22 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
         }
       }
     },
-    [mealTypeFilter, selectedDate, timezone],
+    [endDate, mealTypeFilter, startDate, timezone],
   );
 
   useEffect(() => {
-    const controller = new AbortController();
+    if (rangeError) {
+      setIsLoading(false);
+      setMeals([]);
+      setTotalPages(0);
+      setLoadError(undefined);
+      return;
+    }
 
+    const controller = new AbortController();
     void fetchMeals(controller.signal);
     return () => controller.abort();
-  }, [fetchMeals, page, refreshKey, requestVersion]);
+  }, [fetchMeals, page, rangeError, refreshKey, requestVersion]);
 
   useEffect(() => {
     const stopPolling = (updateUi = true) => {
@@ -241,13 +257,14 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
     }
   };
 
-  const changeSelectedDate = (date: string) => {
+  const applyRange = (nextStart: string, nextEnd: string) => {
     pageRef.current = 0;
     setPage(0);
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
     setMeals([]);
     setTotalPages(0);
-    setIsLoading(true);
-    setSelectedDate(date);
+    setIsLoading(nextStart <= nextEnd);
   };
 
   const changeMealTypeFilter = (filter: MealTypeFilter) => {
@@ -255,16 +272,22 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
     setPage(0);
     setMeals([]);
     setTotalPages(0);
-    setIsLoading(true);
+    setIsLoading(!rangeError);
     setMealTypeFilter(filter);
   };
 
+  const rangeLabel = formatRangeLabel(startDate, endDate, today);
   const filters = (
     <MealFilters
-      selectedDate={selectedDate}
+      startDate={startDate}
+      endDate={endDate}
       today={today}
       mealType={mealTypeFilter}
-      onDateChange={changeSelectedDate}
+      rangeError={rangeError}
+      rangeLabel={rangeLabel}
+      onStartDateChange={(date) => applyRange(date, endDate)}
+      onEndDateChange={(date) => applyRange(startDate, date)}
+      onPresetRange={applyRange}
       onMealTypeChange={changeMealTypeFilter}
     />
   );
@@ -292,7 +315,9 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
               <AlertCircle className="h-5 w-5" aria-hidden />
             </span>
             <p className="mt-4 text-sm font-semibold text-zinc-900">Unable to load meals</p>
-            <p className="mt-1.5 text-sm text-zinc-600">{loadError}</p>
+            <p className="mt-1.5 text-sm text-zinc-600">
+              Could not load meals for {rangeLabel}. {loadError}
+            </p>
             <button
               type="button"
               onClick={() => setRequestVersion((version) => version + 1)}
@@ -318,10 +343,18 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
               <UtensilsCrossed className="h-6 w-6" aria-hidden />
             </span>
             <h3 className="mt-5 text-base font-semibold text-zinc-900">
-              {selectedDate === today ? "Your meal timeline is empty" : "No meals on this day"}
+              {rangeError
+                ? "Choose a valid date range"
+                : startDate === endDate && startDate === today
+                  ? "Your meal timeline is empty"
+                  : `No meals for ${rangeLabel}`}
             </h3>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              {selectedDate === today ? "Meals will appear here" : "Choose another date to browse your history."}
+              {rangeError
+                ? rangeError
+                : startDate === endDate && startDate === today
+                  ? "Meals logged today will appear here."
+                  : "Try a different date range or meal type."}
             </p>
           </div>
         </div>
@@ -344,6 +377,7 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
           <MealCard
             key={meal.id}
             meal={meal}
+            showDate={startDate !== endDate}
             isDeleting={deletingMealId === meal.id}
             onDelete={() => void deleteMeal(meal.id)}
           />
@@ -379,67 +413,111 @@ export function MealFeed({ refreshKey, onMealsChanged }: MealFeedProps) {
 }
 
 function MealFilters({
-  selectedDate,
+  startDate,
+  endDate,
   today,
   mealType,
-  onDateChange,
+  rangeError,
+  rangeLabel,
+  onStartDateChange,
+  onEndDateChange,
+  onPresetRange,
   onMealTypeChange,
 }: {
-  selectedDate: string;
+  startDate: string;
+  endDate: string;
   today: string;
   mealType: MealTypeFilter;
-  onDateChange: (date: string) => void;
+  rangeError?: string;
+  rangeLabel: string;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
+  onPresetRange: (startDate: string, endDate: string) => void;
   onMealTypeChange: (mealType: MealTypeFilter) => void;
 }) {
-  const isToday = selectedDate === today;
+  const isTodayOnly = startDate === today && endDate === today;
+  const isLastSevenDays = startDate === shiftDate(today, -6) && endDate === today;
 
   return (
     <div className="space-y-3 border-b border-zinc-100 bg-zinc-50/50 px-4 py-3 sm:px-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-xs font-medium text-zinc-600">
           <CalendarDays className="h-3.5 w-3.5 text-zinc-400" aria-hidden />
-          <span>{isToday ? "Today" : formatMealDate(selectedDate)}</span>
+          <span>{rangeLabel}</span>
         </div>
-        <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          aria-label="View previous day"
-          onClick={() => onDateChange(shiftDate(selectedDate, -1))}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-        </button>
-        <label className="sr-only" htmlFor="meal-feed-date">Choose meal date</label>
-        <input
-          id="meal-feed-date"
-          type="date"
-          max={today}
-          value={selectedDate}
-          onChange={(event) => {
-            if (event.target.value) onDateChange(event.target.value);
-          }}
-          className="h-8 rounded-lg border border-zinc-200 bg-white px-2 text-xs font-medium text-zinc-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-teal-600"
-        />
-        <button
-          type="button"
-          aria-label="View next day"
-          disabled={selectedDate >= today}
-          onClick={() => onDateChange(shiftDate(selectedDate, 1))}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-        </button>
-        {!isToday && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <label className="sr-only" htmlFor="meal-feed-start-date">
+            Start date
+          </label>
+          <input
+            id="meal-feed-start-date"
+            type="date"
+            max={today}
+            value={startDate}
+            aria-invalid={Boolean(rangeError)}
+            aria-describedby={rangeError ? "meal-feed-range-error" : undefined}
+            onChange={(event) => {
+              if (event.target.value) onStartDateChange(event.target.value);
+            }}
+            className={cn(
+              "h-8 rounded-lg border bg-white px-2 text-xs font-medium text-zinc-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-teal-600",
+              rangeError ? "border-red-400" : "border-zinc-200",
+            )}
+          />
+          <span className="text-xs text-zinc-400" aria-hidden>
+            to
+          </span>
+          <label className="sr-only" htmlFor="meal-feed-end-date">
+            End date
+          </label>
+          <input
+            id="meal-feed-end-date"
+            type="date"
+            max={today}
+            value={endDate}
+            aria-invalid={Boolean(rangeError)}
+            aria-describedby={rangeError ? "meal-feed-range-error" : undefined}
+            onChange={(event) => {
+              if (event.target.value) onEndDateChange(event.target.value);
+            }}
+            className={cn(
+              "h-8 rounded-lg border bg-white px-2 text-xs font-medium text-zinc-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-teal-600",
+              rangeError ? "border-red-400" : "border-zinc-200",
+            )}
+          />
           <button
             type="button"
-            onClick={() => onDateChange(today)}
-            className="ml-1 h-8 rounded-lg px-2.5 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+            aria-pressed={isLastSevenDays}
+            onClick={() => onPresetRange(shiftDate(today, -6), today)}
+            className={cn(
+              "ml-1 h-8 rounded-lg px-2.5 text-xs font-semibold transition",
+              isLastSevenDays
+                ? "bg-teal-600 text-white shadow-sm"
+                : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+            )}
+          >
+            Last 7 days
+          </button>
+          <button
+            type="button"
+            aria-pressed={isTodayOnly}
+            onClick={() => onPresetRange(today, today)}
+            className={cn(
+              "h-8 rounded-lg px-2.5 text-xs font-semibold transition",
+              isTodayOnly
+                ? "bg-teal-600 text-white shadow-sm"
+                : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+            )}
           >
             Today
           </button>
-        )}
         </div>
       </div>
+      {rangeError && (
+        <p id="meal-feed-range-error" className="text-xs font-medium text-red-600" role="alert">
+          {rangeError}
+        </p>
+      )}
       <div
         className="grid grid-cols-5 rounded-lg border border-zinc-200 bg-white p-1 shadow-sm"
         role="group"
@@ -505,10 +583,12 @@ function isAbortError(error: unknown): boolean {
 
 function MealCard({
   meal,
+  showDate,
   isDeleting,
   onDelete,
 }: {
   meal: Meal;
+  showDate: boolean;
   isDeleting: boolean;
   onDelete: () => void;
 }) {
@@ -527,7 +607,7 @@ function MealCard({
           </div>
           <p className="inline-flex shrink-0 items-center gap-1.5 text-xs tabular-nums text-zinc-400">
             <Clock3 className="h-3.5 w-3.5" aria-hidden />
-            <time dateTime={meal.consumedAt}>{formatMealTime(meal.consumedAt)}</time>
+            <time dateTime={meal.consumedAt}>{formatMealTimestamp(meal.consumedAt, showDate)}</time>
           </p>
         </div>
 
@@ -632,12 +712,13 @@ function MealFeedSkeleton() {
   );
 }
 
-function formatMealTime(value: string): string {
+function formatMealTimestamp(value: string, includeDate: boolean): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return "Unknown time";
   }
   return new Intl.DateTimeFormat(undefined, {
+    ...(includeDate ? { month: "short" as const, day: "numeric" as const } : {}),
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
@@ -657,6 +738,13 @@ function formatMealDate(value: string): string {
   }).format(date);
 }
 
+function formatRangeLabel(startDate: string, endDate: string, today: string): string {
+  if (startDate === endDate) {
+    return startDate === today ? "Today" : formatMealDate(startDate);
+  }
+  return `${formatMealDate(startDate)} – ${formatMealDate(endDate)}`;
+}
+
 function shiftDate(value: string, days: number): string {
   const date = new Date(`${value}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
@@ -664,15 +752,16 @@ function shiftDate(value: string, days: number): string {
 }
 
 function mealQuery(
-  date: string,
+  startDate: string,
+  endDate: string,
   timezone: string,
   page: number,
   size: number,
   mealType?: MealType,
 ): URLSearchParams {
   const params = new URLSearchParams({
-    startDate: date,
-    endDate: date,
+    startDate,
+    endDate,
     timezone,
     page: String(page),
     size: String(size),

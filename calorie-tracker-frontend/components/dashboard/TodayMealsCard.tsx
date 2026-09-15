@@ -28,7 +28,7 @@ export function TodayMealsCard({
         <header className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Meal Timeline</h2>
-            <p className="mt-1 text-xs text-zinc-600">Browse your daily nutrition history</p>
+            <p className="mt-1 text-xs text-zinc-600">Browse meals by date range and meal type</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
