@@ -15,7 +15,7 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div>
-        <p className="text-xs font-medium text-zinc-500">Calories</p>
+        <p className="text-xs font-medium text-zinc-600">Calories</p>
         <p className="mt-1 text-sm font-semibold text-zinc-900">Daily energy</p>
         <p className="mt-2 text-[0.65rem] uppercase tracking-wider text-zinc-400">
           {consumedPercent}% consumed
@@ -36,7 +36,7 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
             cy={size / 2}
             r={radius}
             fill="none"
-            className="stroke-zinc-900"
+            className="stroke-teal-600"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -47,7 +47,7 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
           <p className="text-base font-semibold tabular-nums tracking-tight text-zinc-900">
             {consumed}
           </p>
-          <p className="mt-0.5 text-[10px] font-medium text-zinc-500">of {target} kcal</p>
+          <p className="mt-0.5 text-[10px] font-medium text-zinc-600">of {target} kcal</p>
         </div>
       </div>
     </div>

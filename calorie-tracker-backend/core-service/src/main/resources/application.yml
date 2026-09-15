@@ -7,15 +7,15 @@ spring:
   application:
     name: core-service
   datasource:
-    url: jdbc:postgresql://localhost:9432/calorie_tracker
-    username: calorie_user
-    password: calorie_pass
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   rabbitmq:
-    host: localhost
-    port: 9672
-    username: calorie_user
-    password: calorie_pass
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
     publisher-confirm-type: correlated
     publisher-returns: true
     template:

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   async rewrites() {
     const gateway = process.env.API_GATEWAY_URL ?? "http://localhost:9080";
     return [

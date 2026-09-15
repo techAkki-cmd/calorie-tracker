@@ -20,7 +20,7 @@ export function GoalMetricsPanel({
 }: GoalMetricsPanelProps) {
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-zinc-100 bg-zinc-50/70 p-4">
+      <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4">
         <CalorieRing consumed={currentCalories} target={goals.dailyCalorieTarget} />
       </div>
 
@@ -30,8 +30,8 @@ export function GoalMetricsPanel({
         <MacroBar label="Fat" consumed={currentFat} target={goals.fatTarget} />
       </div>
 
-      <div className="flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/70 px-3.5 py-3">
-        <div className="flex items-center gap-2 text-zinc-500">
+      <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/70 px-3.5 py-3">
+        <div className="flex items-center gap-2 text-zinc-600">
           <Scale className="h-3.5 w-3.5" aria-hidden />
           <span className="text-xs font-medium">Weight goal</span>
         </div>

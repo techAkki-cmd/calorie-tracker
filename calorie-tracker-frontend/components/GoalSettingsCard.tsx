@@ -54,7 +54,7 @@ export function GoalSettingsCard({
             <Target className="h-4 w-4 text-zinc-400" aria-hidden />
             <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Goal Settings</h2>
           </div>
-          <p className="mt-1.5 text-xs text-zinc-500">Daily nutrition targets</p>
+          <p className="mt-1.5 text-xs text-zinc-600">Daily nutrition targets</p>
         </div>
         <button
           type="button"
@@ -64,7 +64,7 @@ export function GoalSettingsCard({
           aria-expanded={isEditing}
           onClick={onStartEditing}
           disabled={loadState !== "ready" || isSaving}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Pencil className="h-3.5 w-3.5" aria-hidden />
         </button>
@@ -81,7 +81,7 @@ export function GoalSettingsCard({
           <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/70 px-4 py-8 text-center">
             <Target className="mx-auto h-5 w-5 text-zinc-400" aria-hidden />
             <p className="mt-3 text-sm font-medium text-zinc-700">No targets configured</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">Use Edit Targets to create your daily plan.</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-600">Use Edit Targets to create your daily plan.</p>
           </div>
         )}
         {loadState === "ready" && goals && (
@@ -97,7 +97,7 @@ export function GoalSettingsCard({
               <p className="mt-3 text-center text-xs text-zinc-400">Syncing targets…</p>
             )}
             {saveStatus === "saved" && (
-              <p className="mt-3 text-center text-xs text-emerald-600">Targets saved.</p>
+              <p className="mt-3 text-center text-xs text-teal-600">Targets saved.</p>
             )}
           </div>
         )}
@@ -140,7 +140,7 @@ function GoalMetricsSkeleton() {
         <div className="h-28 w-28 rounded-full border-8 border-zinc-100" />
       </div>
       {[0, 1, 2].map((item) => (
-        <div key={item} className="rounded-xl border border-zinc-100 p-3">
+        <div key={item} className="rounded-xl border border-zinc-200 bg-white p-3">
           <div className="flex justify-between">
             <div className="h-3 w-14 rounded bg-zinc-100" />
             <div className="h-3 w-20 rounded bg-zinc-100" />

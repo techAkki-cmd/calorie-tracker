@@ -118,18 +118,18 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
             role="dialog"
             aria-modal="false"
             aria-labelledby="nutrition-chat-title"
-            className="mb-3 flex h-[32rem] max-h-[calc(100vh-7rem)] w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white/95 shadow-2xl backdrop-blur-xl sm:w-96"
+            className="mb-3 flex h-[32rem] max-h-[calc(100vh-7rem)] w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl sm:w-96"
           >
             <header className="flex items-center justify-between border-b border-zinc-100 px-4 py-3.5">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-700">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-teal-100 bg-teal-50 text-teal-700">
                   <Bot className="h-4 w-4" aria-hidden />
                 </span>
                 <div>
-                  <h2 id="nutrition-chat-title" className="text-sm font-semibold text-zinc-950">
+                  <h2 id="nutrition-chat-title" className="text-sm font-semibold text-zinc-900">
                     Nutrition assistant
                   </h2>
-                  <p className="text-[0.65rem] text-zinc-500">AI-powered meal and goal support</p>
+                  <p className="text-[0.65rem] text-zinc-600">AI-powered meal and goal support</p>
                 </div>
               </div>
               <button
@@ -163,7 +163,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
               ))}
               {isSending && (
                 <div className="flex justify-start">
-                  <span className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-3.5 py-2.5 text-xs text-zinc-500 shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-3.5 py-2.5 text-xs text-zinc-600 shadow-sm">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                     Thinking…
                   </span>
@@ -198,7 +198,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
                   type="submit"
                   aria-label="Send message"
                   disabled={isSending || !draft.trim()}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isSending ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -220,7 +220,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
         onClick={() => setIsOpen((current) => !current)}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
-        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-[0_14px_35px_-12px_rgba(5,150,105,0.75)] focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-[0_14px_35px_-12px_rgba(13,148,136,0.75)] transition-colors hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
       >
         {isOpen ? <X className="h-5 w-5" aria-hidden /> : <MessageCircle className="h-5 w-5" aria-hidden />}
       </motion.button>
@@ -238,7 +238,7 @@ function AssistantMessage({ content }: { content: string }) {
         if (bullet) {
           return (
             <div key={`${index}-${line}`} className="flex items-start gap-2">
-              <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+              <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-teal-500" aria-hidden />
               <p className="min-w-0">{renderInlineFormatting(bullet[1])}</p>
             </div>
           );
@@ -263,7 +263,7 @@ function normalizeAssistantReply(content: string): string[] {
 function renderInlineFormatting(value: string): React.ReactNode[] {
   return value.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean).map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={`${index}-${part}`} className="font-semibold text-zinc-950">{part.slice(2, -2)}</strong>;
+      return <strong key={`${index}-${part}`} className="font-semibold text-zinc-900">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith("*") && part.endsWith("*")) {
       return <em key={`${index}-${part}`}>{part.slice(1, -1)}</em>;

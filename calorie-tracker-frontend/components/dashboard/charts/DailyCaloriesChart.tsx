@@ -11,15 +11,15 @@ export function DailyCaloriesChart({ data }: { data: AnalyticsDay[] }) {
         <AreaChart data={data} margin={{ top: 12, right: 4, left: 4, bottom: 0 }}>
           <defs>
             <linearGradient id="calorieAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+              <stop offset="0%" stopColor="#0d9488" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#0d9488" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#a1a1aa", fontSize: 10 }}
+            tick={{ fill: "#52525b", fontSize: 10 }}
             dy={8}
           />
           <YAxis hide domain={[0, "dataMax + 200"]} />
@@ -28,10 +28,10 @@ export function DailyCaloriesChart({ data }: { data: AnalyticsDay[] }) {
             type="monotone"
             dataKey="consumedCalories"
             name="Calories"
-            stroke="#6366f1"
+            stroke="#0d9488"
             strokeWidth={2.5}
             fill="url(#calorieAreaGradient)"
-            activeDot={{ r: 4, fill: "#6366f1", stroke: "#fff", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: "#0d9488", stroke: "#fff", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

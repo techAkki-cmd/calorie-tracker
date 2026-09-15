@@ -7,9 +7,9 @@ spring:
   application:
     name: identity-service
   datasource:
-    url: jdbc:postgresql://localhost:9432/calorie_tracker
-    username: calorie_user
-    password: calorie_pass
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

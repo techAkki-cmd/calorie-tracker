@@ -5,9 +5,9 @@ import type { AnalyticsDay } from "@/hooks/useAnalytics";
 import { ChartTooltip } from "./ChartTooltip";
 
 const MACROS = [
-  { key: "protein", name: "Protein", color: "#6366f1" },
-  { key: "carbs", name: "Carbs", color: "#0ea5e9" },
-  { key: "fat", name: "Fat", color: "#10b981" },
+  { key: "protein", name: "Protein", color: "#334155" },
+  { key: "carbs", name: "Carbs", color: "#94a3b8" },
+  { key: "fat", name: "Fat", color: "#0d9488" },
 ] as const;
 
 export function MacroBalanceChart({ today }: { today: AnalyticsDay }) {
@@ -47,7 +47,7 @@ export function MacroBalanceChart({ today }: { today: AnalyticsDay }) {
         {macroData.map((macro) => (
           <span
             key={macro.name}
-            className="flex items-center gap-1.5 text-[0.65rem] text-zinc-500"
+            className="flex items-center gap-1.5 text-[0.65rem] text-zinc-600"
           >
             <span
               className="h-2 w-2 rounded-full"

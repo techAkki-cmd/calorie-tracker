@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { AppAuthProvider } from "@/components/AuthProvider";
 import { TopNav } from "@/components/layout/TopNav";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "NutriMetric",
@@ -22,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} min-h-screen bg-canvas font-sans text-ink antialiased`}>
+      <body className="min-h-screen bg-canvas font-sans text-ink antialiased">
         <AppAuthProvider>
           <div className="flex min-h-screen flex-col">
             <TopNav />

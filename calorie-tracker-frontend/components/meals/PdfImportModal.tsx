@@ -15,8 +15,9 @@ type PdfImportModalProps = {
 };
 
 type PdfImportResponse = {
-  fileReference: string;
-  status: "queued";
+  jobId: string;
+  status: "PENDING";
+  createdAt: string;
 };
 
 export function PdfImportModal({ open, onClose, onQueued }: PdfImportModalProps) {
@@ -92,11 +93,13 @@ export function PdfImportModal({ open, onClose, onQueued }: PdfImportModalProps)
     formData.append("file", selectedFile);
 
     try {
-      await apiClient<PdfImportResponse>("/api/meals/import-pdf", {
+      const importJob = await apiClient<PdfImportResponse>("/api/meals/import-pdf", {
         method: "POST",
         body: formData,
       });
-      window.dispatchEvent(new CustomEvent("pdfImportQueued"));
+      window.dispatchEvent(
+        new CustomEvent("pdfImportQueued", { detail: { jobId: importJob.jobId } }),
+      );
       onQueued();
       onClose();
     } catch (requestError) {
@@ -128,13 +131,13 @@ export function PdfImportModal({ open, onClose, onQueued }: PdfImportModalProps)
       >
         <header className="flex items-start justify-between border-b border-zinc-100 px-5 py-5 sm:px-6">
           <div>
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
               <FileText className="h-5 w-5" aria-hidden />
             </span>
-            <h2 id="pdf-import-title" className="mt-4 text-lg font-semibold tracking-tight text-zinc-950">
+            <h2 id="pdf-import-title" className="mt-4 text-lg font-semibold tracking-tight text-zinc-900">
               Import PDF Diary
             </h2>
-            <p className="mt-1 max-w-md text-sm leading-6 text-zinc-500">
+            <p className="mt-1 max-w-md text-sm leading-6 text-zinc-600">
               Upload a dietary log. Our background processors will extract the text, parse the
               nutrition data via AI, and sync it to your timeline.
             </p>
@@ -180,7 +183,7 @@ export function PdfImportModal({ open, onClose, onQueued }: PdfImportModalProps)
               type="submit"
               disabled={!selectedFile || isUploading}
               aria-busy={isUploading}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isUploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -220,13 +223,13 @@ function PdfDropzone({
 
   if (file) {
     return (
-      <div className="flex min-h-36 items-center gap-4 rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+      <div className="flex min-h-36 items-center gap-4 rounded-2xl border border-teal-200 bg-teal-50/60 p-5">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-teal-600 shadow-sm">
           <FileText className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-zinc-900">{file.name}</p>
-          <p className="mt-1 text-xs text-zinc-500">{formatFileSize(file.size)} · Ready to upload</p>
+          <p className="mt-1 text-xs text-zinc-600">{formatFileSize(file.size)} · Ready to upload</p>
         </div>
         <button
           type="button"
@@ -246,7 +249,7 @@ function PdfDropzone({
       className={cn(
         "flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed p-6 text-center transition",
         isDragging
-          ? "border-indigo-500 bg-indigo-50"
+          ? "border-teal-500 bg-teal-50"
           : "border-zinc-300 bg-zinc-50/70 hover:border-zinc-400 hover:bg-zinc-50",
         disabled && "cursor-wait opacity-60",
       )}
@@ -269,11 +272,11 @@ function PdfDropzone({
           event.currentTarget.value = "";
         }}
       />
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 shadow-sm">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-600 shadow-sm">
         <UploadCloud className="h-5 w-5" aria-hidden />
       </span>
       <p className="mt-4 text-sm font-semibold text-zinc-800">Drop your PDF diary here</p>
-      <p className="mt-1.5 text-xs text-zinc-500">or click to browse · PDF only · under 10 MB</p>
+      <p className="mt-1.5 text-xs text-zinc-600">or click to browse · PDF only · under 10 MB</p>
     </label>
   );
 }

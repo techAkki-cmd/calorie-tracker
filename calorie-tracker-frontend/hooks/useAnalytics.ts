@@ -14,7 +14,12 @@ type RawAnalyticsDay = {
 
 type RawWeeklyAnalytics = {
   days: RawAnalyticsDay[];
-  today?: RawAnalyticsDay;
+  goals: {
+    dailyCalorieTarget: number;
+    proteinTarget: number | string;
+    carbTarget: number | string;
+    fatTarget: number | string;
+  } | null;
 };
 
 export type AnalyticsDay = {
@@ -29,6 +34,7 @@ export type AnalyticsDay = {
 export type WeeklyAnalytics = {
   days: AnalyticsDay[];
   today: AnalyticsDay;
+  goals: RawWeeklyAnalytics["goals"];
 };
 
 const EMPTY_DAY: AnalyticsDay = {
@@ -67,8 +73,11 @@ export function useAnalytics(refreshKey = 0) {
           { signal: controller.signal },
         );
         const days = (response.days ?? []).map(normalizeDay);
-        const today = response.today ? normalizeDay(response.today) : days.at(-1) ?? EMPTY_DAY;
-        setData({ days, today });
+        const today = days.find((day) => day.date === localDate) ?? {
+          ...EMPTY_DAY,
+          date: localDate,
+        };
+        setData({ days, today, goals: response.goals ?? null });
         hasLoaded.current = true;
       } catch (requestError) {
         if (requestError instanceof DOMException && requestError.name === "AbortError") {

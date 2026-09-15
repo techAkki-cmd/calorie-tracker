@@ -11,16 +11,24 @@ import {
 import { DailyCaloriesChart } from "@/components/dashboard/charts/DailyCaloriesChart";
 import { MacroBalanceChart } from "@/components/dashboard/charts/MacroBalanceChart";
 import { WeeklyTrendChart } from "@/components/dashboard/charts/WeeklyTrendChart";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import type { WeeklyAnalytics } from "@/hooks/useAnalytics";
 
-export function DashboardMetrics({ refreshKey = 0 }: { refreshKey?: number }) {
-  const { data, isLoading, error, refetch } = useAnalytics(refreshKey);
-
+export function DashboardMetrics({
+  data,
+  isLoading,
+  error,
+  onRetry,
+}: {
+  data?: WeeklyAnalytics;
+  isLoading: boolean;
+  error?: string;
+  onRetry: () => void;
+}) {
   if (isLoading) {
     return <MetricsSkeleton />;
   }
 
-  if (error || !data) {
+  if (!data) {
     return (
       <section
         className="card flex h-72 items-center justify-center md:col-span-3"
@@ -29,10 +37,10 @@ export function DashboardMetrics({ refreshKey = 0 }: { refreshKey?: number }) {
         <div className="max-w-sm px-6 text-center">
           <AlertCircle className="mx-auto h-5 w-5 text-rose-500" aria-hidden />
           <p className="mt-3 text-sm font-semibold text-zinc-900">Analytics unavailable</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">{error}</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-600">{error}</p>
           <button
             type="button"
-            onClick={refetch}
+            onClick={onRetry}
             className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50"
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden />
@@ -93,7 +101,7 @@ function MetricCard({
     <article className="card h-72 overflow-hidden p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
             <Icon className="h-4 w-4" aria-hidden />
           </span>
           <div>
@@ -101,7 +109,7 @@ function MetricCard({
             <p className="mt-0.5 text-[0.65rem] text-zinc-400">{subtitle}</p>
           </div>
         </div>
-        <span className="text-sm font-semibold tabular-nums text-zinc-950">{value}</span>
+        <span className="text-sm font-semibold tabular-nums text-zinc-900">{value}</span>
       </div>
       <div className="mt-4">{children}</div>
     </article>

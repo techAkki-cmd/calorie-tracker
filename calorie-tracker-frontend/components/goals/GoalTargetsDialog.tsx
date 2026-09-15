@@ -69,7 +69,7 @@ export function GoalTargetsDialog({
             <h2 id="goal-targets-title" className="mt-4 text-lg font-semibold tracking-tight text-zinc-900">
               Edit Targets
             </h2>
-            <p className="mt-1 text-sm text-zinc-500">Update your daily calorie and macro plan.</p>
+            <p className="mt-1 text-sm text-zinc-600">Update your daily calorie and macro plan.</p>
           </div>
           <button
             type="button"
@@ -162,7 +162,7 @@ export function GoalTargetsDialog({
               type="submit"
               disabled={isSaving}
               aria-busy={isSaving}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-zinc-900 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-teal-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSaving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               {isSaving ? "Saving…" : "Save Targets"}

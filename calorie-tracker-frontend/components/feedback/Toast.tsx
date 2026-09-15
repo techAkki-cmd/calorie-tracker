@@ -19,9 +19,9 @@ export function Toast({ message, onDismiss, duration = 6500 }: ToastProps) {
     <div
       role="status"
       aria-live="polite"
-      className="fixed right-4 top-20 z-[80] flex w-[calc(100%-2rem)] max-w-md items-start gap-3 rounded-xl border border-emerald-200 bg-white/95 p-4 text-sm text-zinc-700 shadow-xl backdrop-blur sm:right-6"
+      className="fixed right-4 top-20 z-[80] flex w-[calc(100%-2rem)] max-w-md items-start gap-3 rounded-xl border border-teal-200 bg-white/95 p-4 text-sm text-zinc-700 shadow-xl backdrop-blur sm:right-6"
     >
-      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
+      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" aria-hidden />
       <p className="flex-1 leading-5">{message}</p>
       <button
         type="button"

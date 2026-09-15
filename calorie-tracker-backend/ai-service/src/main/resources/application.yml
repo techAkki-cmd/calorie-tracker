@@ -10,10 +10,10 @@ spring:
     listener:
       simple:
         default-requeue-rejected: false
-    host: localhost
-    port: 9672
-    username: calorie_user
-    password: calorie_pass
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
   servlet:
     multipart:
       # The 1MB default rejects almost every phone photo.
@@ -31,4 +31,4 @@ pdf:
   import-dir: ${PDF_IMPORT_DIR:${java.io.tmpdir}/calorie-tracker-pdfs}
 
 core-service:
-  base-url: http://localhost:9082
+  base-url: ${CORE_SERVICE_BASE_URL}

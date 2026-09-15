@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
-import { Camera, Check, Loader2, Sparkles, UploadCloud, X } from "lucide-react";
+import { CalendarDays, Camera, Check, Loader2, Sparkles, UploadCloud, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError, apiClient } from "@/lib/apiClient";
 import { cn } from "@/lib/cn";
@@ -21,6 +21,8 @@ type MealDraft = {
   protein: string;
   carbs: string;
   fat: string;
+  micronutrientSummary: string;
+  consumedDate: string;
 };
 
 type MealFieldErrors = Partial<Record<keyof MealDraft, string>>;
@@ -32,6 +34,7 @@ type NutritionExtractionResponse = {
   protein: number;
   carbs: number;
   fat: number;
+  micronutrientSummary: string;
 };
 
 type MealLogModalProps = {
@@ -48,6 +51,8 @@ const EMPTY_DRAFT: MealDraft = {
   protein: "",
   carbs: "",
   fat: "",
+  micronutrientSummary: "",
+  consumedDate: "",
 };
 
 export function MealLogModal({ open, onClose, onMealCreated }: MealLogModalProps) {
@@ -102,6 +107,9 @@ export function MealLogModal({ open, onClose, onMealCreated }: MealLogModalProps
 
   useEffect(() => {
     if (open) {
+      setDraft((current) =>
+        current.consumedDate ? current : { ...current, consumedDate: localDateValue(new Date()) },
+      );
       return;
     }
     setActiveTab("ai");
@@ -155,6 +163,7 @@ export function MealLogModal({ open, onClose, onMealCreated }: MealLogModalProps
         protein: formatNumber(extraction.protein),
         carbs: formatNumber(extraction.carbs),
         fat: formatNumber(extraction.fat),
+        micronutrientSummary: extraction.micronutrientSummary,
       }));
       setActiveTab("manual");
       setShowAiBadge(true);
@@ -185,7 +194,6 @@ export function MealLogModal({ open, onClose, onMealCreated }: MealLogModalProps
         body: {
           ...validation.payload,
           mealType: draft.mealType,
-          consumedAt: new Date().toISOString(),
         },
       });
       await onMealCreated();
@@ -215,10 +223,10 @@ export function MealLogModal({ open, onClose, onMealCreated }: MealLogModalProps
       >
         <header className="flex items-start justify-between border-b border-zinc-100 px-5 py-5 sm:px-6">
           <div>
-            <h2 id="meal-log-title" className="text-lg font-semibold tracking-tight text-zinc-950">
+            <h2 id="meal-log-title" className="text-lg font-semibold tracking-tight text-zinc-900">
               Log a meal
             </h2>
-            <p className="mt-1 text-sm text-zinc-500">Start with a photo or enter nutrition manually.</p>
+            <p className="mt-1 text-sm text-zinc-600">Start with a photo or enter nutrition manually.</p>
           </div>
           <button
             type="button"
@@ -290,7 +298,7 @@ function TabButton({
       onClick={onClick}
       className={cn(
         "inline-flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-medium transition",
-        active ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-800",
+        active ? "bg-teal-600 text-white shadow-sm" : "text-zinc-600 hover:text-zinc-800",
       )}
     >
       {children}
@@ -325,7 +333,7 @@ function ImageDropzone({
       className={cn(
         "relative flex min-h-72 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed p-6 text-center transition",
         isDragging
-          ? "border-indigo-500 bg-indigo-50"
+          ? "border-teal-500 bg-teal-50"
           : "border-zinc-300 bg-zinc-50/70 hover:border-zinc-400 hover:bg-zinc-50",
         disabled && "cursor-wait",
       )}
@@ -377,13 +385,13 @@ function ImageDropzone({
         </>
       ) : (
         <>
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 shadow-sm">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-600 shadow-sm">
             <UploadCloud className="h-5 w-5" aria-hidden />
           </span>
           <p className="mt-4 text-sm font-semibold text-zinc-800">
             Drag a food photo or nutrition label here
           </p>
-          <p className="mt-1.5 text-xs text-zinc-500">or click to browse · PNG, JPG or WEBP · 10 MB max</p>
+          <p className="mt-1.5 text-xs text-zinc-600">or click to browse · PNG, JPG or WEBP · 10 MB max</p>
         </>
       )}
     </label>
@@ -410,7 +418,7 @@ function ManualMealForm({
       <div className="flex min-h-6 items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Meal details</p>
         {showAiBadge && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[0.65rem] font-semibold text-violet-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-[0.65rem] font-semibold text-teal-700">
             <Sparkles className="h-3 w-3" aria-hidden />
             Pre-filled by AI
           </span>
@@ -430,8 +438,8 @@ function ManualMealForm({
               className={cn(
                 "h-9 rounded-lg border text-xs font-semibold transition",
                 draft.mealType === mealType
-                  ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                  : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900",
+                  ? "border-teal-600 bg-teal-600 text-white shadow-sm"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
               )}
             >
               {toTitleCase(mealType)}
@@ -439,6 +447,36 @@ function ManualMealForm({
           ))}
         </div>
       </fieldset>
+
+      <label htmlFor="meal-consumed-date" className="mt-4 block">
+        <span className="text-sm font-medium text-zinc-900">Date consumed</span>
+        <span className="relative mt-1.5 block">
+          <CalendarDays
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+            aria-hidden
+          />
+          <input
+            id="meal-consumed-date"
+            type="date"
+            max={localDateValue(new Date())}
+            value={draft.consumedDate}
+            disabled={isSaving}
+            aria-invalid={Boolean(errors.consumedDate)}
+            aria-describedby={errors.consumedDate ? "meal-consumed-date-error" : undefined}
+            onChange={(event) => onDraftChange("consumedDate", event.target.value)}
+            className={cn(
+              "form-input h-11 pl-10",
+              errors.consumedDate && "border-red-500 focus:ring-red-500",
+            )}
+          />
+        </span>
+        {errors.consumedDate && (
+          <p id="meal-consumed-date-error" className="mt-1 text-xs text-red-600" role="alert">
+            {errors.consumedDate}
+          </p>
+        )}
+        <p className="mt-1 text-xs text-zinc-400">Backdated entries use your current local time.</p>
+      </label>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <TextField
@@ -468,11 +506,25 @@ function ManualMealForm({
         <NumberField id="meal-fat" label="Fat" unit="g" value={draft.fat} error={errors.fat} max={9999.99} step={0.01} disabled={isSaving} onChange={(value) => onDraftChange("fat", value)} />
       </div>
 
+      <label htmlFor="meal-micronutrients" className="mt-4 block">
+        <span className="text-sm font-medium text-zinc-900">Micronutrient summary</span>
+        <textarea
+          id="meal-micronutrients"
+          maxLength={1000}
+          rows={2}
+          value={draft.micronutrientSummary}
+          placeholder="e.g. High in Vitamin C, Low Iron"
+          disabled={isSaving}
+          onChange={(event) => onDraftChange("micronutrientSummary", event.target.value)}
+          className="form-input mt-1.5 min-h-20 resize-y py-2.5"
+        />
+      </label>
+
       <button
         type="submit"
         disabled={isSaving}
         aria-busy={isSaving}
-        className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-teal-600 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
         {isSaving ? "Saving meal…" : "Save Meal"}
@@ -549,6 +601,8 @@ function validateMealDraft(draft: MealDraft): {
     protein: number;
     carbs: number;
     fat: number;
+    micronutrientSummary?: string;
+    consumedAt: string;
   };
 } {
   const errors: MealFieldErrors = {};
@@ -565,11 +619,33 @@ function validateMealDraft(draft: MealDraft): {
   if (protein == null) errors.protein = "Enter a valid amount.";
   if (carbs == null) errors.carbs = "Enter a valid amount.";
   if (fat == null) errors.fat = "Enter a valid amount.";
+  const consumedAt = toConsumedAt(draft.consumedDate);
+  if (!consumedAt) errors.consumedDate = "Choose today or an earlier valid date.";
 
-  if (Object.keys(errors).length > 0 || calories == null || protein == null || carbs == null || fat == null) {
+  if (
+    Object.keys(errors).length > 0 ||
+    calories == null ||
+    protein == null ||
+    carbs == null ||
+    fat == null ||
+    !consumedAt
+  ) {
     return { errors };
   }
-  return { errors, payload: { name, quantity, calories, protein, carbs, fat } };
+  const micronutrientSummary = draft.micronutrientSummary.trim();
+  return {
+    errors,
+    payload: {
+      name,
+      quantity,
+      calories,
+      protein,
+      carbs,
+      fat,
+      consumedAt,
+      ...(micronutrientSummary ? { micronutrientSummary } : {}),
+    },
+  };
 }
 
 function parseNutritionNumber(value: string, max: number, integerOnly = false): number | null {
@@ -585,6 +661,38 @@ function parseNutritionNumber(value: string, max: number, integerOnly = false): 
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function localDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toConsumedAt(value: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value > localDateValue(new Date())) {
+    return null;
+  }
+  const [year, month, day] = value.split("-").map(Number);
+  const now = new Date();
+  const consumedAt = new Date(
+    year,
+    month - 1,
+    day,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+  );
+  if (
+    Number.isNaN(consumedAt.getTime()) ||
+    consumedAt.getFullYear() !== year ||
+    consumedAt.getMonth() !== month - 1 ||
+    consumedAt.getDate() !== day
+  ) {
+    return null;
+  }
+  return consumedAt.toISOString();
 }
 
 function toTitleCase(value: string): string {

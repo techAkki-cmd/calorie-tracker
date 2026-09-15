@@ -13,7 +13,7 @@ export function WeeklyTrendChart({ data }: { data: AnalyticsDay[] }) {
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#a1a1aa", fontSize: 10 }}
+            tick={{ fill: "#52525b", fontSize: 10 }}
             dy={8}
           />
           <YAxis hide />
@@ -21,9 +21,9 @@ export function WeeklyTrendChart({ data }: { data: AnalyticsDay[] }) {
             content={<ChartTooltip valueSuffix="g" />}
             cursor={{ fill: "#f4f4f5", radius: 6 }}
           />
-          <Bar dataKey="protein" name="Protein" stackId="a" fill="#6366f1" />
-          <Bar dataKey="carbs" name="Carbs" stackId="a" fill="#0ea5e9" />
-          <Bar dataKey="fat" name="Fat" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="protein" name="Protein" stackId="a" fill="#334155" />
+          <Bar dataKey="carbs" name="Carbs" stackId="a" fill="#94a3b8" />
+          <Bar dataKey="fat" name="Fat" stackId="a" fill="#0d9488" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

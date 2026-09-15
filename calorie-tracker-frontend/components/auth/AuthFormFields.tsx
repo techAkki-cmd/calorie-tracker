@@ -87,11 +87,11 @@ export function AuthFormFields({
           <span>{isSubmitting ? `${submitLabel}…` : submitLabel}</span>
         </button>
       </form>
-      <p className="mt-7 border-t border-zinc-100 pt-6 text-center text-sm text-zinc-500">
+      <p className="mt-7 border-t border-zinc-100 pt-6 text-center text-sm text-zinc-600">
         {footerHint}{" "}
         <Link
           href={footerHref}
-          className="font-semibold text-slate-950 underline-offset-4 transition-colors hover:text-slate-700 hover:underline"
+          className="font-semibold text-zinc-900 underline-offset-4 transition-colors hover:text-teal-700 hover:underline"
         >
           {footerLabel}
         </Link>

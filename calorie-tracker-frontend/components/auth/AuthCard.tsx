@@ -21,10 +21,10 @@ export function AuthCard({ title, description, children }: AuthCardProps) {
         <div className="surface-card overflow-hidden">
           <div className="border-b border-zinc-100 px-6 py-7 sm:px-8 sm:py-8">
             <BrandLogo href="/" />
-            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-zinc-950 sm:text-[1.75rem]">
+            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-zinc-900 sm:text-[1.75rem]">
               {title}
             </h1>
-            <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-500">{description}</p>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-600">{description}</p>
           </div>
           <div className="px-6 py-7 sm:px-8 sm:py-8">{children}</div>
         </div>
