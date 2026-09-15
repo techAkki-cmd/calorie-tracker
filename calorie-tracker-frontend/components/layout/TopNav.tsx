@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, LogOut, Sparkles, UserPlus } from "lucide-react";
+import { ArrowRight, ChevronDown, LogOut, UserPlus } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/cn";
 
@@ -46,17 +47,7 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200/50 bg-white/60 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link
-          href={isSignedIn ? "/dashboard" : "/"}
-          className="group flex items-center gap-2.5"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-[0_8px_20px_-8px_rgba(79,70,229,0.8)] transition-transform duration-300 group-hover:rotate-6 group-hover:scale-105">
-            <Sparkles className="h-4 w-4 transition-transform duration-500 group-hover:rotate-12" aria-hidden />
-          </span>
-          <span className="bg-gradient-to-r from-zinc-950 via-violet-800 to-indigo-600 bg-clip-text text-sm font-bold tracking-tight text-transparent sm:text-base">
-            CalorieTracker
-          </span>
-        </Link>
+        <BrandLogo href={isSignedIn ? "/dashboard" : "/"} />
 
         {isSignedIn ? (
           <div ref={menuRef} className="relative">

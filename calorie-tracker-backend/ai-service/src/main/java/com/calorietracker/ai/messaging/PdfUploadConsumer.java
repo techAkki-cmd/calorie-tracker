@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -70,11 +71,15 @@ public class PdfUploadConsumer {
         } else {
             Path pdf = resolveImportPath(message.fileReference());
             String text = pdfParserUtil.extractText(Files.readAllBytes(pdf));
-            List<NutritionDiaryItem> items = geminiVisionService.parseNutritionDiary(text);
+            String documentFingerprint = MealValidation.hash(normalizeDiaryText(text));
+            // The file timestamp is the durable upload-time fallback for undated diaries. It also
+            // keeps a dead-letter replay deterministic without changing the existing wire contract.
+            List<NutritionDiaryItem> items = geminiVisionService.parseNutritionDiary(
+                    text, Files.getLastModifiedTime(pdf).toInstant());
             meals = new ArrayList<>(items.size());
             for (int index = 0; index < items.size(); index++) {
                 meals.add(MealValidation.meal(validator, message.userId(), items.get(index),
-                        "pdf:" + message.fileReference() + ":" + index));
+                        "pdf:" + documentFingerprint + ":" + index));
             }
             // Publish an immutable extraction snapshot before the first database write.
             Path temporary = Files.createTempFile(importDir, "extraction-", ".tmp");
@@ -117,6 +122,13 @@ public class PdfUploadConsumer {
             throw AiExtractionException.badRequest("PDF file was not found in the import directory");
         }
         return resolved;
+    }
+
+    private static String normalizeDiaryText(String text) {
+        return text.lines()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty())
+                .collect(Collectors.joining("\n"));
     }
 
 }

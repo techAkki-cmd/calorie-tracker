@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Calorie Tracker",
+  title: "NutriMetric",
   description: "Enterprise nutrition tracking with AI-assisted logging.",
 };
 

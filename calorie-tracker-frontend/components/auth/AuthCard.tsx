@@ -1,7 +1,7 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { cn } from "@/lib/cn";
 
 type AuthCardProps = {
@@ -20,12 +20,7 @@ export function AuthCard({ title, description, children }: AuthCardProps) {
       <div className="w-full max-w-md">
         <div className="surface-card overflow-hidden">
           <div className="border-b border-zinc-100 px-6 py-7 sm:px-8 sm:py-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-slate-950 shadow-sm">
-              <Sparkles className="h-4 w-4" strokeWidth={1.8} aria-hidden />
-            </div>
-            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              Calorie Tracker
-            </p>
+            <BrandLogo href="/" />
             <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-zinc-950 sm:text-[1.75rem]">
               {title}
             </h1>

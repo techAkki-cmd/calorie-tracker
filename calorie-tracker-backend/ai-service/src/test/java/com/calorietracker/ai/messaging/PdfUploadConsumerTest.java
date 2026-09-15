@@ -15,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -94,6 +95,21 @@ class PdfUploadConsumerTest {
     }
 
     @Test
+    void duplicatePdfContentUsesSameIdempotencyKeysAcrossStoredFileNames() throws Exception {
+        byte[] diary = PdfParserUtilTest.pdfWithText("Oatmeal breakfast");
+        Files.write(importDir.resolve("first.pdf"), diary);
+        Files.write(importDir.resolve("retry.pdf"), diary);
+        UUID userId = UUID.randomUUID();
+
+        consumer.receivePdfUpload(new PdfUploadMessage(userId, "first.pdf"));
+        consumer.receivePdfUpload(new PdfUploadMessage(userId, "retry.pdf"));
+
+        assertThat(coreClient.batches).hasSize(2);
+        assertThat(coreClient.batches.get(0).getFirst().idempotencyKey())
+                .isEqualTo(coreClient.batches.get(1).getFirst().idempotencyKey());
+    }
+
+    @Test
     void rejectsPathTraversal() {
         assertThatThrownBy(() -> consumer.resolveImportPath("../secret.pdf"))
                 .isInstanceOf(AiExtractionException.class)
@@ -117,7 +133,7 @@ class PdfUploadConsumerTest {
         }
 
         @Override
-        public List<NutritionDiaryItem> parseNutritionDiary(String text) {
+        public List<NutritionDiaryItem> parseNutritionDiary(String text, Instant importedAt) {
             lastText = text;
             if (fail) {
                 throw AiExtractionException.badGateway("hallucinated json");

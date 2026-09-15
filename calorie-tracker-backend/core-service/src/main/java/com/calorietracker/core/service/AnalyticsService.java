@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,13 +36,18 @@ public class AnalyticsService {
 
     @Transactional(readOnly = true)
     public WeeklyReportDto getWeeklyReport(UUID userId) {
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        return getWeeklyReport(userId, ZoneOffset.UTC);
+    }
+
+    @Transactional(readOnly = true)
+    public WeeklyReportDto getWeeklyReport(UUID userId, ZoneId timezone) {
+        LocalDate today = LocalDate.now(timezone);
         LocalDate startDate = today.minusDays(WINDOW_DAYS - 1);
-        Instant from = startDate.atStartOfDay().toInstant(ZoneOffset.UTC);
-        Instant to = today.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+        Instant from = startDate.atStartOfDay(timezone).toInstant();
+        Instant to = today.plusDays(1).atStartOfDay(timezone).toInstant();
 
         List<DailySummaryDto> days = fillMissingDays(
-                foodEntryRepository.sumMacrosByDay(userId, from, to).stream()
+                foodEntryRepository.sumMacrosByDay(userId, from, to, timezone.getId()).stream()
                         .map(AnalyticsService::toSummary)
                         .toList(),
                 startDate,
@@ -72,13 +78,13 @@ public class AnalyticsService {
     }
 
     private static DailySummaryDto toSummary(DailyMacroRow row) {
-        long calories = row.totalCalories() == null ? 0L : row.totalCalories();
+        long calories = row.getTotalCalories() == null ? 0L : row.getTotalCalories();
         return new DailySummaryDto(
-                row.date(),
+                row.getDate(),
                 Math.toIntExact(calories),
-                row.totalProtein(),
-                row.totalCarbs(),
-                row.totalFat());
+                row.getTotalProtein(),
+                row.getTotalCarbs(),
+                row.getTotalFat());
     }
 
     private static DailySummaryDto scaled(DailySummaryDto row) {

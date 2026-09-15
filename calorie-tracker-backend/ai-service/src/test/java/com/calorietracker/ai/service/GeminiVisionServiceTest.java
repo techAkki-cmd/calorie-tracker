@@ -20,10 +20,12 @@ import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,11 +38,12 @@ class GeminiVisionServiceTest {
 
     @Test
     void mapsGeminiEnvelopeToNutritionDto() {
-        String body = envelope("{\"calories\": 540, \"protein\": 31.5, \"carbs\": 44.0, \"fat\": 22.25}");
+        String body = envelope("{\"name\":\"Chicken bowl\",\"calories\":540,\"protein\":31.5,\"carbs\":44.0,\"fat\":22.25}");
 
         NutritionExtractionResponse result = serviceReturning(HttpStatus.OK, body)
                 .extractNutritionFromImage(image());
 
+        assertThat(result.name()).isEqualTo("Chicken bowl");
         assertThat(result.calories()).isEqualTo(540);
         assertThat(result.protein()).isEqualTo(31.5);
         assertThat(result.carbs()).isEqualTo(44.0);
@@ -49,7 +52,7 @@ class GeminiVisionServiceTest {
 
     @Test
     void sendsBase64ImageAndStrictJsonInstruction() {
-        String body = envelope("{\"calories\": 100, \"protein\": 1, \"carbs\": 2, \"fat\": 3}");
+        String body = envelope("{\"name\":\"Apple\",\"calories\":100,\"protein\":1,\"carbs\":2,\"fat\":3}");
 
         serviceReturning(HttpStatus.OK, body).extractNutritionFromImage(image());
 
@@ -60,6 +63,7 @@ class GeminiVisionServiceTest {
         assertThat(sent).contains("ZmFrZS1pbWFnZS1ieXRlcw==");
         assertThat(sent).contains("\"response_mime_type\":\"application/json\"");
         assertThat(sent).contains("response_schema");
+        assertThat(sent).contains("name");
         assertThat(sent).contains("calories");
     }
 
@@ -70,6 +74,36 @@ class GeminiVisionServiceTest {
                 .isInstanceOf(WebClientResponseException.class)
                 .satisfies(ex -> assertThat(((WebClientResponseException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
+    }
+
+    @Test
+    void retriesTransientProviderFailureAndReturnsRecoveredResponse() {
+        AtomicInteger attempts = new AtomicInteger();
+        String successBody = envelope("{\"name\":\"Rice bowl\",\"calories\":410,\"protein\":24,\"carbs\":38,\"fat\":16}");
+        ExchangeFunction exchange = request -> {
+            capturedBody.set(serializeBody(request));
+            int attempt = attempts.incrementAndGet();
+            return Mono.just(ClientResponse.create(attempt == 1
+                            ? HttpStatus.SERVICE_UNAVAILABLE
+                            : HttpStatus.OK)
+                    .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                    .body(attempt == 1 ? "{\"error\":\"temporarily unavailable\"}" : successBody)
+                    .build());
+        };
+        WebClient webClient = WebClient.builder()
+                .baseUrl("https://gemini.test")
+                .exchangeFunction(exchange)
+                .build();
+
+        NutritionExtractionResponse result = new GeminiVisionService(
+                webClient,
+                MAPPER,
+                "gemini-2.5-flash",
+                com.calorietracker.ai.TestValidation.VALIDATOR)
+                .extractNutritionFromImage(image());
+
+        assertThat(attempts).hasValue(2);
+        assertThat(result.calories()).isEqualTo(410);
     }
 
     @Test
@@ -168,6 +202,20 @@ class GeminiVisionServiceTest {
         assertThat(capturedBody.get()).contains("eggs toast");
         assertThat(capturedBody.get()).contains("BREAKFAST");
         assertThat(capturedBody.get()).contains("Preserve historical dates", "consumedAtISO");
+        assertThat(capturedBody.get()).contains("thinkingLevel", "minimal");
+    }
+
+    @Test
+    void suppliesDeterministicImportTimestampForUndatedDiaries() {
+        String body = envelope("[]");
+        Instant importedAt = Instant.parse("2026-09-14T18:00:11Z");
+
+        assertThatThrownBy(() -> serviceReturning(HttpStatus.OK, body)
+                .parseNutritionDiary("Breakfast: eggs", importedAt))
+                .isInstanceOf(AiExtractionException.class);
+
+        assertThat(capturedBody.get()).contains("Import timestamp fallback: 2026-09-14T18:00:11Z");
+        assertThat(capturedBody.get()).contains("If the entire diary has no date or time");
     }
 
     @Test

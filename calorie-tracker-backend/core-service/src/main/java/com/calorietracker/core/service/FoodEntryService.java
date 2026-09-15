@@ -61,8 +61,9 @@ public class FoodEntryService {
                                                                   MealType mealType,
                                                                   Pageable pageable) {
         Page<FoodEntry> entries = mealType == null
-                ? foodEntryRepository.findByUserIdAndConsumedAtBetween(userId, start, end, pageable)
-                : foodEntryRepository.findByUserIdAndMealTypeAndConsumedAtBetween(
+                ? foodEntryRepository.findByUserIdAndConsumedAtGreaterThanEqualAndConsumedAtLessThan(
+                        userId, start, end, pageable)
+                : foodEntryRepository.findByUserIdAndMealTypeAndConsumedAtGreaterThanEqualAndConsumedAtLessThan(
                         userId, mealType, start, end, pageable);
 
         return PagedResponse.from(entries, this::toResponse);

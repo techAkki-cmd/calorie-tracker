@@ -162,6 +162,7 @@ public class ChatInterfaceService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(GeminiGenerateContentResponse.class)
+                .retryWhen(GeminiRetryPolicy.forOperation("chat completion"))
                 .block(Duration.ofSeconds(15));
 
         String text = response == null ? null : response.firstText().orElse(null);

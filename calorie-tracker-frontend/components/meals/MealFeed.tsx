@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   ChevronLeft,
@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { ApiError, apiClient } from "@/lib/apiClient";
+import { useLocalDay } from "@/hooks/useLocalDay";
 
 export type Meal = {
   id: string;
@@ -55,7 +56,7 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
   const pollingIntervalRef = useRef<number>();
   const pollingTimeoutRef = useRef<number>();
   const pollingRequestRef = useRef<AbortController>();
-  const today = useMemo(() => formatLocalDate(new Date()), []);
+  const { date: today, timezone } = useLocalDay();
 
   useEffect(() => {
     setPage(0);
@@ -73,7 +74,7 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
       setLoadError(undefined);
       try {
         const requestedPage = pageRef.current;
-        const params = mealQuery(today, requestedPage, PAGE_SIZE);
+        const params = mealQuery(today, timezone, requestedPage, PAGE_SIZE);
         const response = await apiClient<MealPageResponse>(`/api/meals?${params.toString()}`, {
           signal,
         });
@@ -95,7 +96,7 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
         }
       }
     },
-    [today],
+    [timezone, today],
   );
 
   const fetchAllTodayMeals = useCallback(
@@ -106,7 +107,7 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
         let availablePages = 1;
 
         do {
-          const params = mealQuery(today, requestedPage, TOTALS_PAGE_SIZE);
+          const params = mealQuery(today, timezone, requestedPage, TOTALS_PAGE_SIZE);
           const response = await apiClient<MealPageResponse>(`/api/meals?${params.toString()}`, {
             signal,
           });
@@ -122,7 +123,7 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
         }
       }
     },
-    [onTodayMealsChange, today],
+    [onTodayMealsChange, timezone, today],
   );
 
   useEffect(() => {
@@ -448,17 +449,11 @@ function formatMealTime(value: string): string {
   }).format(date);
 }
 
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function mealQuery(date: string, page: number, size: number): URLSearchParams {
+function mealQuery(date: string, timezone: string, page: number, size: number): URLSearchParams {
   return new URLSearchParams({
     startDate: date,
     endDate: date,
+    timezone,
     page: String(page),
     size: String(size),
     sort: "consumedAt,desc",

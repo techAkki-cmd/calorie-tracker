@@ -5,6 +5,7 @@ import com.calorietracker.core.dto.FoodEntryResponse;
 import com.calorietracker.core.dto.PagedResponse;
 import com.calorietracker.core.model.MealType;
 import com.calorietracker.core.service.FoodEntryService;
+import com.calorietracker.core.util.TimeZones;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -25,8 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,14 +56,16 @@ public class FoodEntryController {
             @RequestHeader("X-User-Id") UUID userId,
             @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "UTC") String timezone,
             @RequestParam(required = false) MealType mealType,
             @PageableDefault(size = 20, sort = "consumedAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
+        ZoneId requestedTimezone = TimeZones.parse(timezone);
         return foodEntryService.getEntriesByTimeRange(
                 userId,
-                startDate.atStartOfDay().toInstant(ZoneOffset.UTC),
-                endDate.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC),
+                startDate.atStartOfDay(requestedTimezone).toInstant(),
+                endDate.plusDays(1).atStartOfDay(requestedTimezone).toInstant(),
                 mealType,
                 pageable);
     }

@@ -22,6 +22,7 @@ function DashboardHome() {
   const { user } = useAuth();
   const goalsState = useHealthGoals();
   const [mealsRevision, setMealsRevision] = useState(0);
+  const [analyticsRevision, setAnalyticsRevision] = useState(0);
   const [todayMeals, setTodayMeals] = useState<Meal[]>([]);
   const [showPdfQueuedToast, setShowPdfQueuedToast] = useState(false);
   const identity = user?.email ?? user?.id;
@@ -36,6 +37,7 @@ function DashboardHome() {
   }, []);
   const updateTodayMeals = useCallback((meals: Meal[]) => {
     setTodayMeals(meals);
+    setAnalyticsRevision((revision) => revision + 1);
   }, []);
   const dailyTotals = useMemo(
     () =>
@@ -64,7 +66,7 @@ function DashboardHome() {
       </header>
 
       <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-        <DashboardMetrics />
+        <DashboardMetrics refreshKey={analyticsRevision} />
         <TodayMealsCard
           refreshKey={mealsRevision}
           onMealCreated={refreshMeals}

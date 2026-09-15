@@ -76,7 +76,7 @@ public class FoodEntry {
     @Column(name = "micronutrient_summary", length = 1000)
     private String micronutrientSummary;
 
-    @Column(name = "consumed_at", nullable = false)
+    @Column(name = "consumed_at", nullable = false, columnDefinition = "timestamp with time zone")
     private Instant consumedAt;
 
     @CreationTimestamp

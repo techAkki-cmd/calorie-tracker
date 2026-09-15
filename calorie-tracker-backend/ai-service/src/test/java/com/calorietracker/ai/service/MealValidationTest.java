@@ -14,10 +14,10 @@ class MealValidationTest {
     @Test
     void rejectsNegativeMissingAndNonfiniteMacros() {
         for (var response : new NutritionExtractionResponse[] {
-                new NutritionExtractionResponse(-1, 1.0, 1.0, 1.0),
-                new NutritionExtractionResponse(100, null, 1.0, 1.0),
-                new NutritionExtractionResponse(100, Double.NaN, 1.0, 1.0),
-                new NutritionExtractionResponse(100, Double.POSITIVE_INFINITY, 1.0, 1.0)}) {
+                new NutritionExtractionResponse("Meal", -1, 1.0, 1.0, 1.0),
+                new NutritionExtractionResponse("Meal", 100, null, 1.0, 1.0),
+                new NutritionExtractionResponse("Meal", 100, Double.NaN, 1.0, 1.0),
+                new NutritionExtractionResponse("Meal", 100, Double.POSITIVE_INFINITY, 1.0, 1.0)}) {
             assertThatThrownBy(() -> MealValidation.validate(TestValidation.VALIDATOR, response))
                     .isInstanceOf(ConstraintViolationException.class);
         }

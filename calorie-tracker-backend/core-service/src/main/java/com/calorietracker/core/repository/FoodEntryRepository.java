@@ -16,31 +16,31 @@ import java.util.UUID;
 
 public interface FoodEntryRepository extends JpaRepository<FoodEntry, UUID> {
 
-    Page<FoodEntry> findByUserIdAndConsumedAtBetween(
+    Page<FoodEntry> findByUserIdAndConsumedAtGreaterThanEqualAndConsumedAtLessThan(
             UUID userId, Instant start, Instant end, Pageable pageable);
 
-    Page<FoodEntry> findByUserIdAndMealTypeAndConsumedAtBetween(
+    Page<FoodEntry> findByUserIdAndMealTypeAndConsumedAtGreaterThanEqualAndConsumedAtLessThan(
             UUID userId, MealType mealType, Instant start, Instant end, Pageable pageable);
 
     Optional<FoodEntry> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
 
     Optional<FoodEntry> findByIdAndUserId(UUID id, UUID userId);
 
-    @Query("""
-            select new com.calorietracker.core.dto.DailyMacroRow(
-                cast(function('timezone', 'UTC', e.consumedAt) as LocalDate),
-                coalesce(sum(e.calories), 0),
-                coalesce(sum(e.protein), 0),
-                coalesce(sum(e.carbs), 0),
-                coalesce(sum(e.fat), 0))
-            from FoodEntry e
-            where e.userId = :userId
-              and e.consumedAt >= :from
-              and e.consumedAt < :to
-            group by cast(function('timezone', 'UTC', e.consumedAt) as LocalDate)
-            order by cast(function('timezone', 'UTC', e.consumedAt) as LocalDate)
-            """)
+    @Query(value = """
+            select cast(e.consumed_at at time zone :timezone as date) as date,
+                   coalesce(sum(e.calories), 0) as "totalCalories",
+                   coalesce(sum(e.protein), 0) as "totalProtein",
+                   coalesce(sum(e.carbs), 0) as "totalCarbs",
+                   coalesce(sum(e.fat), 0) as "totalFat"
+            from food_entries e
+            where e.user_id = :userId
+              and e.consumed_at >= :from
+              and e.consumed_at < :to
+            group by 1
+            order by 1
+            """, nativeQuery = true)
     List<DailyMacroRow> sumMacrosByDay(@Param("userId") UUID userId,
                                        @Param("from") Instant from,
-                                       @Param("to") Instant to);
+                                       @Param("to") Instant to,
+                                       @Param("timezone") String timezone);
 }

@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 
 @Service
@@ -26,25 +27,29 @@ import java.util.Map;
 public class GeminiVisionService {
 
     private static final String IMAGE_PROMPT = """
-            Estimate the nutrition of the food in this image.
-            Reply with JSON only: calories (kcal, integer), protein, carbs, fat (grams).""";
+            Identify the food and estimate its nutrition from this image.
+            Reply with JSON only: name (concise food name), calories (kcal, integer),
+            protein, carbs, fat (grams).""";
 
     private static final String DIARY_PROMPT = """
             Parse this nutrition diary into JSON only: an array of objects with name, mealType
             (BREAKFAST, LUNCH, DINNER, SNACKS), quantity, calories (integer kcal),
             protein, carbs, fat (grams), consumedAtISO (ISO-8601 with an explicit offset).
-            Preserve historical dates and times from the diary; use UTC if no timezone is given.
-            For date-only entries use midnight UTC. Never invent a missing date.
+            Preserve historical dates and times from the diary; use UTC if a date has no timezone.
+            For date-only entries use midnight UTC. If the entire diary has no date or time,
+            use the supplied import timestamp exactly for every entry. Never replace a date that
+            is present in the source with the import timestamp.
             Preserve source order and include each source meal exactly once.""";
 
     private static final Map<String, Object> IMAGE_SCHEMA = Map.of(
             "type", "object",
             "properties", Map.of(
+                    "name", Map.of("type", "string"),
                     "calories", Map.of("type", "integer"),
                     "protein", Map.of("type", "number"),
                     "carbs", Map.of("type", "number"),
                     "fat", Map.of("type", "number")),
-            "required", List.of("calories", "protein", "carbs", "fat"));
+            "required", List.of("name", "calories", "protein", "carbs", "fat"));
 
     private static final Map<String, Object> DIARY_ITEM_SCHEMA = Map.of(
             "type", "object",
@@ -87,11 +92,18 @@ public class GeminiVisionService {
     }
 
     public List<NutritionDiaryItem> parseNutritionDiary(String text) {
+        return parseNutritionDiary(text, Instant.now());
+    }
+
+    public List<NutritionDiaryItem> parseNutritionDiary(String text, Instant importedAt) {
         if (text == null || text.isBlank()) {
             throw AiExtractionException.badRequest("Diary text is required");
         }
+        if (importedAt == null) {
+            throw AiExtractionException.badRequest("Diary import timestamp is required");
+        }
 
-        String json = generateJson(diaryRequestBody(text));
+        String json = generateJson(diaryRequestBody(text, importedAt));
         List<NutritionDiaryItem> parsed = parseDiaryItems(json);
         List<NutritionDiaryItem> usable = validateDiaryRows(parsed);
         if (usable.isEmpty()) {
@@ -106,6 +118,7 @@ public class GeminiVisionService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(GeminiGenerateContentResponse.class)
+                .retryWhen(GeminiRetryPolicy.forOperation("nutrition extraction"))
                 .block(Duration.ofSeconds(15));
 
         String json = response == null ? null : response.firstText().orElse(null);
@@ -141,16 +154,20 @@ public class GeminiVisionService {
                                 "data", encodedImage))))),
                 "generationConfig", Map.of(
                         "response_mime_type", "application/json",
-                        "response_schema", IMAGE_SCHEMA));
+                        "response_schema", IMAGE_SCHEMA,
+                        "thinkingConfig", Map.of("thinkingLevel", "minimal")));
     }
 
-    private Map<String, Object> diaryRequestBody(String text) {
+    private Map<String, Object> diaryRequestBody(String text, Instant importedAt) {
         return Map.of(
                 "contents", List.of(Map.of("parts", List.of(
-                        Map.of("text", DIARY_PROMPT + "\n\n" + text)))),
+                        Map.of("text", DIARY_PROMPT
+                                + "\nImport timestamp fallback: " + importedAt
+                                + "\n\nDiary text:\n" + text)))),
                 "generationConfig", Map.of(
                         "response_mime_type", "application/json",
-                        "response_schema", DIARY_SCHEMA));
+                        "response_schema", DIARY_SCHEMA,
+                        "thinkingConfig", Map.of("thinkingLevel", "minimal")));
     }
 
     private NutritionExtractionResponse parseNutrition(String json) {
