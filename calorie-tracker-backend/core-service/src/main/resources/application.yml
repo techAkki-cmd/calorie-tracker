@@ -34,3 +34,8 @@ spring:
 
 pdf:
   import-dir: ${PDF_IMPORT_DIR:${java.io.tmpdir}/calorie-tracker-pdfs}
+
+outbox:
+  publisher:
+    batch-size: ${OUTBOX_PUBLISHER_BATCH_SIZE:20}
+    fixed-delay-ms: ${OUTBOX_PUBLISHER_FIXED_DELAY_MS:1000}

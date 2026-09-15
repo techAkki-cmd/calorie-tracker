@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -21,7 +21,7 @@ public class HealthGoalController {
 
     private final HealthGoalService healthGoalService;
 
-    @RequestMapping(method = {RequestMethod.PUT, RequestMethod.POST})
+    @PutMapping
     public HealthGoalResponse createOrUpdateGoal(@RequestHeader("X-User-Id") UUID userId,
                                                  @Valid @RequestBody HealthGoalRequest request) {
         return healthGoalService.createOrUpdateGoal(userId, request);

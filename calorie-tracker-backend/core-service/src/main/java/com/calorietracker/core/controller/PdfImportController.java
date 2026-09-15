@@ -1,8 +1,6 @@
 package com.calorietracker.core.controller;
 
 import com.calorietracker.core.dto.PdfImportJobResponse;
-import com.calorietracker.core.messaging.PdfUploadProducer;
-import com.calorietracker.core.model.PdfImportJobStatus;
 import com.calorietracker.core.service.PdfImportJobService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,14 +29,11 @@ import java.util.UUID;
 public class PdfImportController {
 
     private final Path importDir;
-    private final PdfUploadProducer pdfUploadProducer;
     private final PdfImportJobService jobService;
 
     public PdfImportController(@Value("${pdf.import-dir}") String importDir,
-                               PdfUploadProducer pdfUploadProducer,
                                PdfImportJobService jobService) {
         this.importDir = Path.of(importDir).toAbsolutePath().normalize();
-        this.pdfUploadProducer = pdfUploadProducer;
         this.jobService = jobService;
     }
 
@@ -55,30 +50,23 @@ public class PdfImportController {
             throw new IllegalArgumentException("Uploaded file must be a PDF");
         }
 
-        PdfImportJobResponse job = jobService.create(userId);
         String storedName = UUID.randomUUID() + ".pdf";
         Path destination = importDir.resolve(storedName).normalize();
         if (!destination.startsWith(importDir)) {
             throw new IllegalArgumentException("Invalid import path");
         }
-        boolean brokerConfirmed = false;
+        boolean outboxCommitted = false;
         try {
             Files.createDirectories(importDir);
             file.transferTo(destination);
-            pdfUploadProducer.sendPdfForProcessing(job.jobId(), userId, storedName);
-            brokerConfirmed = true;
-            log.info("Queued PDF {} as job {} for user {}", storedName, job.jobId(), userId);
+            PdfImportJobResponse job = jobService.create(userId, storedName);
+            outboxCommitted = true;
+            log.info("Persisted PDF {} as outbox-backed job {} for user {}",
+                    storedName, job.jobId(), userId);
             return job;
-        } catch (IOException | RuntimeException failure) {
-            try {
-                jobService.updateStatus(job.jobId(), PdfImportJobStatus.FAILED);
-            } catch (RuntimeException statusFailure) {
-                failure.addSuppressed(statusFailure);
-            }
-            throw failure;
         } finally {
-            // Once the broker confirms the message, file ownership transfers to ai-service.
-            if (!brokerConfirmed) {
+            // Once the transaction commits, the outbox worker owns publication and file lifecycle.
+            if (!outboxCommitted) {
                 try {
                     Files.deleteIfExists(destination);
                 } catch (IOException cleanupFailure) {
