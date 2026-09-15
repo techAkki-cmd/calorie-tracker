@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { ChatWidget } from "@/components/ai/ChatWidget";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
 import { TodayMealsCard } from "@/components/dashboard/TodayMealsCard";
@@ -102,6 +103,7 @@ function DashboardHome() {
           onDismiss={dismissPdfQueuedNotification}
         />
       )}
+      <ChatWidget onMealDataChanged={refreshMeals} />
     </section>
   );
 }

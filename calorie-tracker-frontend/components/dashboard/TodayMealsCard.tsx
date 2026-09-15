@@ -28,8 +28,8 @@ export function TodayMealsCard({
       <section className="card flex min-h-[26rem] flex-col md:col-span-2">
         <header className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
-            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Today&apos;s Meals</h2>
-            <p className="mt-1 text-xs text-zinc-500">Your daily nutrition timeline</p>
+            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Meal Timeline</h2>
+            <p className="mt-1 text-xs text-zinc-500">Browse your daily nutrition history</p>
           </div>
           <div className="flex items-center gap-2">
             <button

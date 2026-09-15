@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -57,6 +58,15 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
   const pollingTimeoutRef = useRef<number>();
   const pollingRequestRef = useRef<AbortController>();
   const { date: today, timezone } = useLocalDay();
+  const [selectedDate, setSelectedDate] = useState(today);
+  const previousTodayRef = useRef(today);
+
+  useEffect(() => {
+    if (selectedDate === previousTodayRef.current) {
+      setSelectedDate(today);
+    }
+    previousTodayRef.current = today;
+  }, [selectedDate, today]);
 
   useEffect(() => {
     setPage(0);
@@ -74,7 +84,7 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
       setLoadError(undefined);
       try {
         const requestedPage = pageRef.current;
-        const params = mealQuery(today, timezone, requestedPage, PAGE_SIZE);
+        const params = mealQuery(selectedDate, timezone, requestedPage, PAGE_SIZE);
         const response = await apiClient<MealPageResponse>(`/api/meals?${params.toString()}`, {
           signal,
         });
@@ -96,7 +106,7 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
         }
       }
     },
-    [timezone, today],
+    [selectedDate, timezone],
   );
 
   const fetchAllTodayMeals = useCallback(
@@ -188,11 +198,12 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
     setLoadError(undefined);
     try {
       await apiClient<void>(`/api/meals/${mealId}`, { method: "DELETE" });
+      setMeals((current) => current.filter((meal) => meal.id !== mealId));
       if (meals.length === 1 && page > 0) {
-        setPage((current) => current - 1);
-      } else {
-        setRequestVersion((version) => version + 1);
+        pageRef.current = page - 1;
+        setPage(page - 1);
       }
+      setRequestVersion((version) => version + 1);
     } catch (error) {
       setLoadError(error instanceof ApiError ? error.detail : "The meal could not be deleted.");
     } finally {
@@ -200,14 +211,30 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
     }
   };
 
+  const changeSelectedDate = (date: string) => {
+    pageRef.current = 0;
+    setPage(0);
+    setMeals([]);
+    setTotalPages(0);
+    setIsLoading(true);
+    setSelectedDate(date);
+  };
+
   if (isLoading) {
-    return <MealFeedSkeleton />;
+    return (
+      <div className="flex flex-1 flex-col">
+        <PdfSyncIndicator active={isPdfSyncing} />
+        <DateFilter selectedDate={selectedDate} today={today} onChange={changeSelectedDate} />
+        <MealFeedSkeleton />
+      </div>
+    );
   }
 
   if (loadError && meals.length === 0) {
     return (
       <div className="flex flex-1 flex-col">
         <PdfSyncIndicator active={isPdfSyncing} />
+        <DateFilter selectedDate={selectedDate} today={today} onChange={changeSelectedDate} />
         <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
           <div className="max-w-sm text-center">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">
@@ -232,15 +259,18 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
     return (
       <div className="flex flex-1 flex-col">
         <PdfSyncIndicator active={isPdfSyncing} />
+        <DateFilter selectedDate={selectedDate} today={today} onChange={changeSelectedDate} />
         <div className="flex flex-1 items-center justify-center p-6 sm:p-10">
           <div className="flex max-w-sm flex-col items-center text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-400 shadow-sm">
               <UtensilsCrossed className="h-6 w-6" aria-hidden />
             </span>
             <h3 className="mt-5 text-base font-semibold text-zinc-900">
-              Your meal timeline is empty
+              {selectedDate === today ? "Your meal timeline is empty" : "No meals on this day"}
             </h3>
-            <p className="mt-2 text-sm leading-6 text-zinc-500">Meals will appear here</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
+              {selectedDate === today ? "Meals will appear here" : "Choose another date to browse your history."}
+            </p>
           </div>
         </div>
       </div>
@@ -250,6 +280,11 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
   return (
     <div className="flex flex-1 flex-col">
       <PdfSyncIndicator active={isPdfSyncing} />
+      <DateFilter
+        selectedDate={selectedDate}
+        today={today}
+        onChange={changeSelectedDate}
+      />
       <div className="flex-1 space-y-3 p-4 sm:p-5">
         {loadError && (
           <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
@@ -290,6 +325,66 @@ export function MealFeed({ refreshKey, onTodayMealsChange }: MealFeedProps) {
           />
         </div>
       </nav>
+    </div>
+  );
+}
+
+function DateFilter({
+  selectedDate,
+  today,
+  onChange,
+}: {
+  selectedDate: string;
+  today: string;
+  onChange: (date: string) => void;
+}) {
+  const isToday = selectedDate === today;
+
+  return (
+    <div className="flex flex-col gap-2 border-b border-zinc-100 bg-zinc-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="flex items-center gap-2 text-xs font-medium text-zinc-600">
+        <CalendarDays className="h-3.5 w-3.5 text-zinc-400" aria-hidden />
+        <span>{isToday ? "Today" : formatMealDate(selectedDate)}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-label="View previous day"
+          onClick={() => onChange(shiftDate(selectedDate, -1))}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+        </button>
+        <label className="sr-only" htmlFor="meal-feed-date">Choose meal date</label>
+        <input
+          id="meal-feed-date"
+          type="date"
+          max={today}
+          value={selectedDate}
+          onChange={(event) => {
+            if (event.target.value) onChange(event.target.value);
+          }}
+          className="h-8 rounded-lg border border-zinc-200 bg-white px-2 text-xs font-medium text-zinc-700 shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-zinc-900"
+        />
+        <button
+          type="button"
+          aria-label="View next day"
+          disabled={selectedDate >= today}
+          onClick={() => onChange(shiftDate(selectedDate, 1))}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        </button>
+        {!isToday && (
+          <button
+            type="button"
+            onClick={() => onChange(today)}
+            className="ml-1 h-8 rounded-lg px-2.5 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
+          >
+            Today
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -447,6 +542,26 @@ function formatMealTime(value: string): string {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function formatMealDate(value: string): string {
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function shiftDate(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function mealQuery(date: string, timezone: string, page: number, size: number): URLSearchParams {
