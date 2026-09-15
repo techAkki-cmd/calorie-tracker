@@ -1,6 +1,7 @@
 package com.calorietracker.core.controller;
 
 import com.calorietracker.core.dto.PdfImportJobResponse;
+import com.calorietracker.core.dto.PagedResponse;
 import com.calorietracker.core.service.PdfImportJobService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,8 +62,9 @@ public class PdfImportController {
         boolean outboxCommitted = false;
         try {
             Files.createDirectories(importDir);
-            file.transferTo(destination);
-            PdfImportJobResponse job = jobService.create(userId, storedName);
+            byte[] sourcePdf = file.getBytes();
+            Files.write(destination, sourcePdf);
+            PdfImportJobResponse job = jobService.create(userId, storedName, sourcePdf);
             outboxCommitted = true;
             log.info("Persisted PDF {} as outbox-backed job {} for user {}",
                     storedName, job.jobId(), userId);
@@ -74,6 +79,21 @@ public class PdfImportController {
                 }
             }
         }
+    }
+
+    @GetMapping("/import-jobs")
+    public PagedResponse<PdfImportJobResponse> listImportJobs(
+            @RequestHeader("X-User-Id") UUID userId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        return jobService.listForUser(userId, pageable);
+    }
+
+    @PostMapping("/import-jobs/{jobId}/retry")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PdfImportJobResponse retryImport(@RequestHeader("X-User-Id") UUID userId,
+                                            @PathVariable UUID jobId) {
+        return jobService.retry(jobId, userId);
     }
 
     @GetMapping("/import-status/{jobId}")

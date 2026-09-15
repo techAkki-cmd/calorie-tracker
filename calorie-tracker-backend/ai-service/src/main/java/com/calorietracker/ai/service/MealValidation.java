@@ -42,7 +42,7 @@ public final class MealValidation {
         String key = hash(userId + "\n" + sourceKey);
         return new ImportedMealRequest(item.name().trim(), item.mealType().toUpperCase(Locale.ROOT),
                 item.quantity().trim(), item.calories(), decimal(item.protein()), decimal(item.carbs()),
-                decimal(item.fat()), null, consumedAt, key);
+                decimal(item.fat()), item.micronutrientSummary().trim(), consumedAt, key);
     }
 
     public static String hash(String value) {

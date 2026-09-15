@@ -29,12 +29,15 @@ public class GeminiVisionService {
     private static final String IMAGE_PROMPT = """
             Identify the food and estimate its nutrition from this image.
             Reply with JSON only: name (concise food name), calories (kcal, integer),
-            protein, carbs, fat (grams).""";
+            protein, carbs, fat (grams), and micronutrientSummary (a concise observation such as
+            "High in Vitamin C, Low Iron"; use "No notable micronutrient information" when the
+            image provides insufficient evidence).""";
 
     private static final String DIARY_PROMPT = """
             Parse this nutrition diary into JSON only: an array of objects with name, mealType
             (BREAKFAST, LUNCH, DINNER, SNACKS), quantity, calories (integer kcal),
-            protein, carbs, fat (grams), consumedAtISO (ISO-8601 with an explicit offset).
+            protein, carbs, fat (grams), micronutrientSummary (a concise observation such as
+            "High in Vitamin C, Low Iron"), consumedAtISO (ISO-8601 with an explicit offset).
             Preserve historical dates and times from the diary; use UTC if a date has no timezone.
             For date-only entries use midnight UTC. If the entire diary has no date or time,
             use the supplied import timestamp exactly for every entry. Never replace a date that
@@ -48,8 +51,10 @@ public class GeminiVisionService {
                     "calories", Map.of("type", "integer"),
                     "protein", Map.of("type", "number"),
                     "carbs", Map.of("type", "number"),
-                    "fat", Map.of("type", "number")),
-            "required", List.of("name", "calories", "protein", "carbs", "fat"));
+                    "fat", Map.of("type", "number"),
+                    "micronutrientSummary", Map.of("type", "string")),
+            "required", List.of("name", "calories", "protein", "carbs", "fat",
+                    "micronutrientSummary"));
 
     private static final Map<String, Object> DIARY_ITEM_SCHEMA = Map.of(
             "type", "object",
@@ -61,8 +66,10 @@ public class GeminiVisionService {
                     "calories", Map.of("type", "integer"),
                     "protein", Map.of("type", "number"),
                     "carbs", Map.of("type", "number"),
-                    "fat", Map.of("type", "number")),
-            "required", List.of("name", "mealType", "quantity", "calories", "protein", "carbs", "fat", "consumedAtISO"));
+                    "fat", Map.of("type", "number"),
+                    "micronutrientSummary", Map.of("type", "string")),
+            "required", List.of("name", "mealType", "quantity", "calories", "protein", "carbs",
+                    "fat", "micronutrientSummary", "consumedAtISO"));
 
     private static final Map<String, Object> DIARY_SCHEMA = Map.of(
             "type", "array",

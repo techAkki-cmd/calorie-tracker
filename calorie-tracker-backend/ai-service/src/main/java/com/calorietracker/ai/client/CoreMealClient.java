@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.Map;
 
 @Component
 public class CoreMealClient {
@@ -47,14 +46,17 @@ public class CoreMealClient {
                 .block(Duration.ofSeconds(15));
     }
 
-    public void updateImportJobStatus(UUID jobId, PdfImportJobStatus status) {
+    public void updateImportJobStatus(UUID jobId, PdfImportJobStatus status, String failureReason) {
         coreServiceWebClient.patch()
                 .uri("/api/internal/import-jobs/{jobId}", jobId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(Map.of("status", status.name()))
+                .bodyValue(new ImportJobStatusUpdate(status.name(), failureReason))
                 .retrieve()
                 .toBodilessEntity()
                 .block(Duration.ofSeconds(15));
+    }
+
+    private record ImportJobStatusUpdate(String status, String failureReason) {
     }
 
     /**

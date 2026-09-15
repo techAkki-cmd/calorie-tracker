@@ -23,6 +23,6 @@ public class InternalPdfImportJobController {
     @PatchMapping("/{jobId}")
     public PdfImportJobResponse updateStatus(@PathVariable UUID jobId,
                                              @Valid @RequestBody PdfImportJobStatusRequest request) {
-        return jobService.updateStatus(jobId, request.status());
+        return jobService.updateStatus(jobId, request.status(), request.failureReason());
     }
 }

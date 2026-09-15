@@ -20,6 +20,7 @@ public record NutritionDiaryItem(
         @NotNull @DecimalMin("0") @DecimalMax("9999.99") Double protein,
         @NotNull @DecimalMin("0") @DecimalMax("9999.99") Double carbs,
         @NotNull @DecimalMin("0") @DecimalMax("9999.99") Double fat,
+        @NotBlank @Size(max = 1000) String micronutrientSummary,
         @NotBlank String consumedAtISO
 ) {
 }

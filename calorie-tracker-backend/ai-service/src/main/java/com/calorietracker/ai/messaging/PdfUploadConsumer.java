@@ -64,7 +64,7 @@ public class PdfUploadConsumer {
                  var lock = channel.lock()) {
                 processLocked(message, pdfPath, manifestPath);
             }
-            coreMealClient.updateImportJobStatus(message.jobId(), PdfImportJobStatus.COMPLETED);
+            coreMealClient.updateImportJobStatus(message.jobId(), PdfImportJobStatus.COMPLETED, null);
             log.info("Completed PDF import job {} for user {}", message.jobId(), message.userId());
         } catch (IOException | RuntimeException failure) {
             reportFailure(message.jobId(), failure);
@@ -119,11 +119,19 @@ public class PdfUploadConsumer {
             return;
         }
         try {
-            coreMealClient.updateImportJobStatus(jobId, PdfImportJobStatus.FAILED);
+            coreMealClient.updateImportJobStatus(jobId, PdfImportJobStatus.FAILED,
+                    failureReason(originalFailure));
         } catch (RuntimeException callbackFailure) {
             originalFailure.addSuppressed(callbackFailure);
             log.error("Could not mark PDF import job {} as FAILED", jobId, callbackFailure);
         }
+    }
+
+    private static String failureReason(Exception failure) {
+        String message = failure.getMessage();
+        String reason = failure.getClass().getSimpleName()
+                + (message == null || message.isBlank() ? "" : ": " + message.trim());
+        return reason.length() <= 1000 ? reason : reason.substring(0, 1000);
     }
 
     private void deleteArtifact(Path path, String description) {
