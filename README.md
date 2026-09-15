@@ -11,7 +11,7 @@ NutriMetric is an end-to-end, event-driven SaaS application for tracking nutriti
 
 ## Product Walkthrough
 
-Screenshots below follow the reviewer path: marketing entry → analytics → adherence → meals → multimodal logging → weight.
+Screenshots below follow the reviewer path: marketing entry → analytics → adherence → meals → multimodal logging → weight → conversational AI.
 
 <p align="center">
   <strong>1 · Landing</strong><br/>
@@ -63,6 +63,15 @@ Screenshots below follow the reviewer path: marketing entry → analytics → ad
     </td>
   </tr>
 </table>
+
+<p align="center">
+  <strong>7 · Nutrition assistant</strong><br/>
+  <sub>Floating chat for meal logging, goals, weekly recaps, and nutrition Q&amp;A</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/07-nutrition-assistant.png" alt="Nutrition assistant chat answering a protein question" width="720" />
+</p>
 
 ## Why I Built This
 
@@ -216,7 +225,7 @@ Stop containers without deleting volumes:
 docker compose down
 ```
 
-Deeper assumptions (chat scope, PDF text-only limit, unpublished internal ports) are documented in [`calorie-tracker-backend/README.md`](calorie-tracker-backend/README.md).
+Deeper stack notes: chat covers meals, goals, and summaries (photo/PDF/weight stay in the UI); PDF import supports text/tabular exports only (image-only scans are not supported); Postgres, RabbitMQ, and Java services stay unpublished on internal Docker networks.
 
 ## What I Used AI For
 
