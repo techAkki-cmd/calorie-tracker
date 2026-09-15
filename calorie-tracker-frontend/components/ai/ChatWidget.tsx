@@ -23,7 +23,8 @@ type ChatWidgetProps = {
 const INITIAL_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  content: "Ask about your goals, request a daily summary, or tell me what you ate.",
+  content:
+    "Ask for a weekly recap, check or update goals, log a meal, or ask a nutrition question.",
 };
 
 export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
@@ -126,17 +127,17 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
                   <Bot className="h-4 w-4" aria-hidden />
                 </span>
                 <div>
-                  <h2 id="nutrition-chat-title" className="text-sm font-semibold text-zinc-900">
+                  <h2 id="nutrition-chat-title" className="text-base font-semibold text-zinc-900">
                     Nutrition assistant
                   </h2>
-                  <p className="text-[0.65rem] text-zinc-600">AI-powered meal and goal support</p>
+                  <p className="text-sm text-zinc-600">AI-powered meal and goal support</p>
                 </div>
               </div>
               <button
                 type="button"
                 aria-label="Close nutrition assistant"
                 onClick={() => setIsOpen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
               >
                 <X className="h-4 w-4" aria-hidden />
               </button>
@@ -153,7 +154,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
                   className={message.role === "user" ? "flex justify-end" : "flex justify-start"}
                 >
                   {message.role === "user" ? (
-                    <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-zinc-950 px-3.5 py-2.5 text-sm leading-5 text-white">
+                    <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-zinc-950 px-3.5 py-2.5 text-base leading-6 text-white">
                       {message.content}
                     </p>
                   ) : (
@@ -163,7 +164,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
               ))}
               {isSending && (
                 <div className="flex justify-start">
-                  <span className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-3.5 py-2.5 text-xs text-zinc-600 shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-600 shadow-sm">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                     Thinking…
                   </span>
@@ -173,7 +174,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
 
             <form onSubmit={submitMessage} className="border-t border-zinc-100 bg-white p-3">
               {error && (
-                <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
+                <p className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
                   {error}
                 </p>
               )}
@@ -191,7 +192,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
                     setDraft(event.target.value);
                     setError(undefined);
                   }}
-                  placeholder="Ask or log a meal…"
+                  placeholder="Weekly recap, log a meal, goals…"
                   className="form-input h-11 flex-1"
                 />
                 <button
@@ -207,7 +208,7 @@ export function ChatWidget({ onMealDataChanged }: ChatWidgetProps) {
                   )}
                 </button>
               </div>
-              <p className="mt-2 px-1 text-[0.65rem] text-zinc-400">Verify AI-generated nutrition values.</p>
+              <p className="mt-2 px-1 text-sm text-zinc-500">Verify AI-generated nutrition values.</p>
             </form>
           </motion.section>
         )}
@@ -232,7 +233,7 @@ function AssistantMessage({ content }: { content: string }) {
   const lines = normalizeAssistantReply(content);
 
   return (
-    <div className="max-w-[90%] space-y-2 rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-3.5 py-3 text-sm leading-5 text-zinc-700 shadow-sm">
+    <div className="max-w-[90%] space-y-2 rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-3.5 py-3 text-base leading-6 text-zinc-700 shadow-sm">
       {lines.map((line, index) => {
         const bullet = line.match(/^(?:[-*•])\s+(.+)$/);
         if (bullet) {
@@ -252,7 +253,7 @@ function AssistantMessage({ content }: { content: string }) {
 function normalizeAssistantReply(content: string): string[] {
   return content
     .replace(/\r\n?/g, "\n")
-    .replace(/\s+(?=\*\*(?:daily totals?|goal progress)[^*]*\*\*)/gi, "\n")
+    .replace(/\s+(?=\*\*(?:daily totals?|week totals?|daily average|vs goals|goal progress)[^*]*\*\*)/gi, "\n")
     // Some model responses contain Markdown bullets but omit the newline before them.
     .replace(/\s+\*\s+(?=(?:\*\*)?[A-Z0-9])/g, "\n* ")
     .split(/\n+/)

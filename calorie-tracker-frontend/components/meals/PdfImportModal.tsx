@@ -137,7 +137,7 @@ export function PdfImportModal({ open, onClose, onQueued }: PdfImportModalProps)
             <h2 id="pdf-import-title" className="mt-4 text-lg font-semibold tracking-tight text-zinc-900">
               Import PDF Diary
             </h2>
-            <p className="mt-1 max-w-md text-sm leading-6 text-zinc-600">
+            <p className="mt-1 max-w-md text-base leading-6 text-zinc-600">
               Upload a dietary log. Our background processors will extract the text, parse the
               nutrition data via AI, and sync it to your timeline.
             </p>
@@ -147,7 +147,7 @@ export function PdfImportModal({ open, onClose, onQueued }: PdfImportModalProps)
             aria-label="Close"
             disabled={isUploading}
             onClick={onClose}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -229,14 +229,14 @@ function PdfDropzone({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-zinc-900">{file.name}</p>
-          <p className="mt-1 text-xs text-zinc-600">{formatFileSize(file.size)} · Ready to upload</p>
+          <p className="mt-1 text-sm text-zinc-600">{formatFileSize(file.size)} · Ready to upload</p>
         </div>
         <button
           type="button"
           aria-label={`Remove ${file.name}`}
           disabled={disabled}
           onClick={onRemove}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
@@ -276,7 +276,7 @@ function PdfDropzone({
         <UploadCloud className="h-5 w-5" aria-hidden />
       </span>
       <p className="mt-4 text-sm font-semibold text-zinc-800">Drop your PDF diary here</p>
-      <p className="mt-1.5 text-xs text-zinc-600">or click to browse · PDF only · under 10 MB</p>
+      <p className="mt-1.5 text-sm text-zinc-600">or click to browse · PDF only · under 10 MB</p>
     </label>
   );
 }

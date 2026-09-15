@@ -1,5 +1,6 @@
 package com.calorietracker.ai.client;
 
+import com.calorietracker.ai.dto.GoalUpdateRequest;
 import com.calorietracker.ai.dto.ImportedMealRequest;
 import com.calorietracker.ai.dto.PdfImportJobStatus;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -92,5 +93,29 @@ public class CoreMealClient {
                 })
                 .blockOptional(Duration.ofSeconds(15))
                 .orElseGet(Optional::empty);
+    }
+
+    public String getWeeklyAnalyticsRaw(UUID userId) {
+        String body = coreServiceWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/analytics/weekly")
+                        .queryParam("timezone", "UTC")
+                        .build())
+                .header("X-User-Id", userId.toString())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block(Duration.ofSeconds(15));
+        return body == null || body.isBlank() ? "{\"days\":[],\"goals\":null}" : body;
+    }
+
+    public void putGoal(UUID userId, GoalUpdateRequest goal) {
+        coreServiceWebClient.put()
+                .uri("/api/goals")
+                .header("X-User-Id", userId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(goal)
+                .retrieve()
+                .toBodilessEntity()
+                .block(Duration.ofSeconds(15));
     }
 }

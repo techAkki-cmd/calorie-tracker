@@ -58,7 +58,7 @@ export function TopNav() {
               onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
               className="flex h-10 items-center gap-2 rounded-xl border border-zinc-200 bg-white p-1.5 pr-2 text-left shadow-sm transition-colors hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
             >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-xs font-semibold text-zinc-700">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-sm font-semibold text-zinc-700">
                 {avatarLabel}
               </span>
               <span className="hidden max-w-48 truncate text-sm font-medium text-zinc-700 sm:block">
@@ -66,7 +66,7 @@ export function TopNav() {
               </span>
               <ChevronDown
                 className={cn(
-                  "h-3.5 w-3.5 text-zinc-400 transition-transform",
+                  "h-4 w-4 text-zinc-500 transition-transform",
                   isMenuOpen && "rotate-180",
                 )}
                 aria-hidden
@@ -79,8 +79,8 @@ export function TopNav() {
                 className="absolute right-0 mt-2 w-64 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg"
               >
                 <div className="border-b border-zinc-100 px-2 py-2.5">
-                  <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">Signed in as</p>
-                  <p className="mt-1 truncate text-sm font-medium text-zinc-900">{accountLabel}</p>
+                  <p className="text-sm font-medium uppercase tracking-wider text-zinc-500">Signed in as</p>
+                  <p className="mt-1 truncate text-base font-medium text-zinc-900">{accountLabel}</p>
                 </div>
                 <button
                   type="button"

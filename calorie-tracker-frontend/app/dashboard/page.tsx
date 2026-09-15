@@ -11,6 +11,7 @@ import { Toast } from "@/components/feedback/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useHealthGoals } from "@/hooks/useHealthGoals";
+import { greetingNameFromEmail } from "@/lib/userDisplay";
 
 export default function DashboardPage() {
   return (
@@ -25,13 +26,17 @@ function DashboardHome() {
   const goalsState = useHealthGoals();
   const analytics = useAnalytics();
   const refetchAnalytics = analytics.refetch;
+  const refetchGoals = goalsState.refetch;
   const [mealsRevision, setMealsRevision] = useState(0);
   const [showPdfQueuedToast, setShowPdfQueuedToast] = useState(false);
-  const identity = user?.email ?? user?.id;
+  const greetingName = user?.email
+    ? greetingNameFromEmail(user.email)
+    : undefined;
   const refreshDashboardData = useCallback(() => {
     setMealsRevision((revision) => revision + 1);
     refetchAnalytics();
-  }, [refetchAnalytics]);
+    void refetchGoals();
+  }, [refetchAnalytics, refetchGoals]);
   const showPdfQueuedNotification = useCallback(() => {
     setShowPdfQueuedToast(true);
   }, []);
@@ -43,11 +48,11 @@ function DashboardHome() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">Overview</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">Overview</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
-          {identity ? `Welcome back, ${identity}` : "Welcome back"}
+          {greetingName ? `Welcome back, ${greetingName}` : "Welcome back"}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+        <p className="mt-2 max-w-2xl text-base leading-7 text-zinc-600">
           Your nutrition analytics and daily goals, organized in one focused workspace.
         </p>
       </header>

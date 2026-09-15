@@ -49,12 +49,14 @@ export function GoalSettingsCard({
   return (
     <section className="card overflow-hidden">
       <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-zinc-400" aria-hidden />
-            <h2 className="text-sm font-semibold tracking-tight text-zinc-900">Goal Settings</h2>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
+            <Target className="h-5 w-5" aria-hidden />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-zinc-900">Goal Settings</h2>
+            <p className="mt-1 text-sm text-zinc-600">Daily nutrition targets</p>
           </div>
-          <p className="mt-1.5 text-xs text-zinc-600">Daily nutrition targets</p>
         </div>
         <button
           type="button"
@@ -64,9 +66,9 @@ export function GoalSettingsCard({
           aria-expanded={isEditing}
           onClick={onStartEditing}
           disabled={loadState !== "ready" || isSaving}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Pencil className="h-3.5 w-3.5" aria-hidden />
+          <Pencil className="h-4 w-4" aria-hidden />
         </button>
       </div>
 
@@ -79,9 +81,9 @@ export function GoalSettingsCard({
         )}
         {loadState === "ready" && !goals && (
           <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/70 px-4 py-8 text-center">
-            <Target className="mx-auto h-5 w-5 text-zinc-400" aria-hidden />
-            <p className="mt-3 text-sm font-medium text-zinc-700">No targets configured</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-600">Use Edit Targets to create your daily plan.</p>
+            <Target className="mx-auto h-5 w-5 text-zinc-500" aria-hidden />
+            <p className="mt-3 text-base font-medium text-zinc-700">No targets configured</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">Use Edit Targets to create your daily plan.</p>
           </div>
         )}
         {loadState === "ready" && goals && (
@@ -94,10 +96,10 @@ export function GoalSettingsCard({
               currentFat={currentFat}
             />
             {saveStatus === "saving" && (
-              <p className="mt-3 text-center text-xs text-zinc-400">Syncing targets…</p>
+              <p className="mt-3 text-center text-sm text-zinc-500">Syncing targets…</p>
             )}
             {saveStatus === "saved" && (
-              <p className="mt-3 text-center text-xs text-teal-600">Targets saved.</p>
+              <p className="mt-3 text-center text-sm text-teal-600">Targets saved.</p>
             )}
           </div>
         )}
@@ -145,7 +147,7 @@ function GoalMetricsSkeleton() {
             <div className="h-3 w-14 rounded bg-zinc-100" />
             <div className="h-3 w-20 rounded bg-zinc-100" />
           </div>
-          <div className="mt-3 h-1.5 rounded-full bg-zinc-100" />
+          <div className="mt-3 h-2.5 rounded-full bg-zinc-100" />
         </div>
       ))}
     </div>

@@ -1,12 +1,30 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import type { AnalyticsDay } from "@/hooks/useAnalytics";
 import { ChartTooltip } from "./ChartTooltip";
 
-export function DailyCaloriesChart({ data }: { data: AnalyticsDay[] }) {
+export function DailyCaloriesChart({
+  data,
+  calorieTarget,
+}: {
+  data: AnalyticsDay[];
+  calorieTarget?: number | null;
+}) {
+  const target = calorieTarget != null && calorieTarget > 0 ? calorieTarget : undefined;
+  const peak = Math.max(...data.map((day) => day.consumedCalories), target ?? 0, 0);
+
   return (
-    <div className="h-44 w-full" aria-label="Daily calories over the last seven days">
+    <div className="h-full min-h-[250px] w-full" aria-label="Daily calories over the last seven days">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 12, right: 4, left: 4, bottom: 0 }}>
           <defs>
@@ -15,15 +33,31 @@ export function DailyCaloriesChart({ data }: { data: AnalyticsDay[] }) {
               <stop offset="100%" stopColor="#0d9488" stopOpacity={0} />
             </linearGradient>
           </defs>
+          <CartesianGrid vertical={false} stroke="#f4f4f5" />
           <XAxis
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#52525b", fontSize: 10 }}
+            tick={{ fill: "#52525b", fontSize: 12 }}
             dy={8}
           />
-          <YAxis hide domain={[0, "dataMax + 200"]} />
+          <YAxis hide domain={[0, peak + 200]} />
           <Tooltip content={<ChartTooltip valueSuffix=" kcal" />} cursor={false} />
+          {target != null && (
+            <ReferenceLine
+              y={target}
+              stroke="#a1a1aa"
+              strokeDasharray="5 4"
+              strokeWidth={1.5}
+              ifOverflow="extendDomain"
+              label={{
+                value: "Target",
+                position: "insideTopRight",
+                fill: "#52525b",
+                fontSize: 12,
+              }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="consumedCalories"

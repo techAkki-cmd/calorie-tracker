@@ -180,14 +180,14 @@ export function WeightTrackingCard() {
     <section className="card overflow-hidden md:col-span-3" aria-labelledby="weight-tracking-title">
       <header className="flex flex-col gap-4 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-            <Scale className="h-4 w-4" aria-hidden />
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
+            <Scale className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <h2 id="weight-tracking-title" className="text-sm font-semibold tracking-tight text-zinc-900">
+            <h2 id="weight-tracking-title" className="text-base font-semibold text-zinc-900">
               Weight tracking
             </h2>
-            <p className="mt-0.5 text-xs text-zinc-600">Your latest 90 measurements</p>
+            <p className="mt-0.5 text-sm text-zinc-600">Your latest 90 measurements</p>
           </div>
         </div>
         <form onSubmit={submitWeight} className="flex items-start gap-2" noValidate>
@@ -209,15 +209,15 @@ export function WeightTrackingCard() {
                   setError(undefined);
                   setSaveSuccess(false);
                 }}
-                className="form-input h-9 w-40 pr-9 text-xs sm:w-44"
+                className="form-input h-10 w-40 pr-9 text-sm sm:w-44"
               />
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[0.65rem] font-medium text-zinc-400">kg</span>
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-zinc-500">kg</span>
             </div>
           </div>
           <button
             type="submit"
             disabled={isMutating || !weight.trim()}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-teal-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-teal-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSaving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -232,7 +232,7 @@ export function WeightTrackingCard() {
       </header>
 
       {error && (
-        <div className="flex items-center gap-2 border-b border-red-100 bg-red-50/70 px-5 py-2.5 text-xs text-red-700" role="alert">
+        <div className="flex items-center gap-2 border-b border-red-100 bg-red-50/70 px-5 py-2.5 text-sm text-red-700" role="alert">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
           {error}
         </div>
@@ -241,23 +241,23 @@ export function WeightTrackingCard() {
       <div className="grid min-h-72 gap-6 p-5 sm:p-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-5">
           <div>
-            <p className="text-xs font-medium text-zinc-600">Latest measurement</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight tabular-nums text-zinc-900">
+            <p className="text-sm font-medium text-zinc-600">Latest measurement</p>
+            <p className="mt-2 text-4xl font-bold tracking-tight tabular-nums text-zinc-900">
               {latest ? latest.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}
-              {latest && <span className="ml-1 text-sm font-medium text-zinc-400">kg</span>}
+              {latest && <span className="ml-1 text-xl font-semibold text-zinc-600">kg</span>}
             </p>
             {change !== undefined && (
-              <p className={cn("mt-3 inline-flex items-center gap-1 text-xs font-semibold", change <= 0 ? "text-teal-700" : "text-amber-700")}>
+              <p className={cn("mt-3 inline-flex items-center gap-1 text-sm font-semibold", change <= 0 ? "text-teal-700" : "text-amber-700")}>
                 {change <= 0 ? <TrendingDown className="h-3.5 w-3.5" aria-hidden /> : <TrendingUp className="h-3.5 w-3.5" aria-hidden />}
                 {change > 0 ? "+" : ""}{change.toFixed(2)} kg since prior entry
               </p>
             )}
-            {latest && <p className="mt-2 text-xs text-zinc-400">{formatFullDate(latest.timestamp)}</p>}
+            {latest && <p className="mt-2 text-sm text-zinc-500">{formatFullDate(latest.timestamp)}</p>}
           </div>
 
           {recentMeasurements.length > 0 && (
             <div className="mt-5 border-t border-zinc-200/70 pt-4">
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-500">
                 Recent entries
               </p>
               <ul className="mt-2 space-y-1" aria-label="Recent weight measurements">
@@ -270,10 +270,10 @@ export function WeightTrackingCard() {
                       className="flex min-h-9 items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition hover:bg-white"
                     >
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold tabular-nums text-zinc-800">
+                        <p className="text-sm font-semibold tabular-nums text-zinc-800">
                           {measurement.value.toLocaleString(undefined, { maximumFractionDigits: 2 })} kg
                         </p>
-                        <p className="truncate text-[0.65rem] text-zinc-400">
+                        <p className="truncate text-sm text-zinc-500">
                           {formatFullDate(measurement.timestamp)}
                         </p>
                       </div>
@@ -285,7 +285,7 @@ export function WeightTrackingCard() {
                             title="Cancel"
                             disabled={isMutating}
                             onClick={() => setConfirmingDeleteId(undefined)}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-40"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-40"
                           >
                             <X className="h-3.5 w-3.5" aria-hidden />
                           </button>
@@ -294,7 +294,7 @@ export function WeightTrackingCard() {
                             aria-label={`Confirm deletion of ${measurement.value} kilograms from ${formatFullDate(measurement.timestamp)}`}
                             disabled={isMutating}
                             onClick={() => void deleteMeasurement(measurement.id)}
-                            className="inline-flex h-7 items-center gap-1 rounded-md bg-red-600 px-2 text-[0.65rem] font-semibold text-white transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
+                            className="inline-flex h-7 items-center gap-1 rounded-md bg-red-600 px-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-60"
                           >
                             {isDeleting && <Loader2 className="h-3 w-3 animate-spin" aria-hidden />}
                             Delete
@@ -310,7 +310,7 @@ export function WeightTrackingCard() {
                             setConfirmingDeleteId(measurement.id);
                             setError(undefined);
                           }}
-                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-35"
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-500 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-35"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden />
                         </button>
@@ -323,21 +323,21 @@ export function WeightTrackingCard() {
           )}
         </div>
 
-        <div className="h-60 min-w-0">
+        <div className="min-h-[300px] h-[300px] min-w-0">
           {isLoading ? (
             <div className="h-full animate-pulse rounded-xl bg-gradient-to-b from-zinc-100 to-zinc-50" aria-label="Loading weight history" />
           ) : chartData.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/40 text-center">
-              <Scale className="h-5 w-5 text-zinc-400" aria-hidden />
-              <p className="mt-3 text-sm font-semibold text-zinc-800">No weight history yet</p>
-              <p className="mt-1 text-xs text-zinc-600">Log today&apos;s weight to begin your trend.</p>
+              <Scale className="h-5 w-5 text-zinc-500" aria-hidden />
+              <p className="mt-3 text-base font-semibold text-zinc-800">No weight history yet</p>
+              <p className="mt-1 text-sm text-zinc-600">Log today&apos;s weight to begin your trend.</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 15, right: 15, bottom: 5, left: 0 }}>
                 <CartesianGrid vertical={false} stroke="#f4f4f5" strokeDasharray="3 3" />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#52525b", fontSize: 10 }} dy={8} minTickGap={24} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#52525b", fontSize: 10 }} width={38} domain={["dataMin - 2", "dataMax + 2"]} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#52525b", fontSize: 12 }} dy={8} minTickGap={24} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#52525b", fontSize: 12 }} width={42} domain={["dataMin - 2", "dataMax + 2"]} />
                 <Tooltip content={<ChartTooltip valueSuffix=" kg" />} cursor={{ stroke: "#d4d4d8", strokeDasharray: "3 3" }} />
                 <Line type="monotone" dataKey="value" name="Weight" stroke="#0d9488" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#0d9488", stroke: "#fff", strokeWidth: 2 }} />
               </LineChart>

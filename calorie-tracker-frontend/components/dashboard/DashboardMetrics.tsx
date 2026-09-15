@@ -4,12 +4,16 @@ import {
   Activity,
   AlertCircle,
   Flame,
+  Leaf,
   RefreshCw,
+  Target,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { DailyCaloriesChart } from "@/components/dashboard/charts/DailyCaloriesChart";
+import { GoalVsActualChart } from "@/components/dashboard/charts/GoalVsActualChart";
 import { MacroBalanceChart } from "@/components/dashboard/charts/MacroBalanceChart";
+import { MicronutrientSummary } from "@/components/dashboard/charts/MicronutrientSummary";
 import { WeeklyTrendChart } from "@/components/dashboard/charts/WeeklyTrendChart";
 import type { WeeklyAnalytics } from "@/hooks/useAnalytics";
 
@@ -31,17 +35,17 @@ export function DashboardMetrics({
   if (!data) {
     return (
       <section
-        className="card flex h-72 items-center justify-center md:col-span-3"
+        className="card flex min-h-[22rem] items-center justify-center md:col-span-3"
         aria-label="Analytics unavailable"
       >
         <div className="max-w-sm px-6 text-center">
           <AlertCircle className="mx-auto h-5 w-5 text-rose-500" aria-hidden />
-          <p className="mt-3 text-sm font-semibold text-zinc-900">Analytics unavailable</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-600">{error}</p>
+          <p className="mt-3 text-base font-semibold text-zinc-900">Analytics unavailable</p>
+          <p className="mt-1 text-sm leading-6 text-zinc-600">{error}</p>
           <button
             type="button"
             onClick={onRetry}
-            className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+            className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50"
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden />
             Try again
@@ -51,6 +55,12 @@ export function DashboardMetrics({
     );
   }
 
+  const calorieTarget = data.goals?.dailyCalorieTarget;
+  const microCount = data.micronutrients.length;
+  const goalProgressLabel = data.goals
+    ? `${formatNumber(data.today.consumedCalories)} / ${formatNumber(data.goals.dailyCalorieTarget)}`
+    : "No goals";
+
   return (
     <section
       aria-label="Nutrition analytics"
@@ -58,11 +68,11 @@ export function DashboardMetrics({
     >
       <MetricCard
         title="Daily calories"
-        subtitle="Last seven days"
+        subtitle="Last seven days · target overlay"
         icon={Flame}
         value={`${formatNumber(data.today.consumedCalories)} kcal`}
       >
-        <DailyCaloriesChart data={data.days} />
+        <DailyCaloriesChart data={data.days} calorieTarget={calorieTarget} />
       </MetricCard>
       <MetricCard
         title="Macro balance"
@@ -80,6 +90,23 @@ export function DashboardMetrics({
       >
         <WeeklyTrendChart data={data.days} />
       </MetricCard>
+      <MetricCard
+        title="Goal vs actual"
+        subtitle="Week totals vs 7× daily targets"
+        icon={Target}
+        value={goalProgressLabel}
+        className="md:col-span-2"
+      >
+        <GoalVsActualChart days={data.days} goals={data.goals} />
+      </MetricCard>
+      <MetricCard
+        title="Micronutrients"
+        subtitle="Vitamins & minerals · 7 days"
+        icon={Leaf}
+        value={microCount === 0 ? "None" : `${microCount} noted`}
+      >
+        <MicronutrientSummary micronutrients={data.micronutrients} />
+      </MetricCard>
     </section>
   );
 }
@@ -90,28 +117,30 @@ function MetricCard({
   value,
   icon: Icon,
   children,
+  className,
 }: {
   title: string;
   subtitle: string;
   value: string;
   icon: LucideIcon;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <article className="card h-72 overflow-hidden p-5">
+    <article className={`card flex min-h-[22rem] flex-col overflow-hidden p-5 ${className ?? ""}`}>
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
-            <Icon className="h-4 w-4" aria-hidden />
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
+            <Icon className="h-5 w-5" aria-hidden />
           </span>
-          <div>
-            <h2 className="text-sm font-semibold text-zinc-900">{title}</h2>
-            <p className="mt-0.5 text-[0.65rem] text-zinc-400">{subtitle}</p>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-zinc-900">{title}</h2>
+            <p className="mt-0.5 text-sm text-zinc-500">{subtitle}</p>
           </div>
         </div>
-        <span className="text-sm font-semibold tabular-nums text-zinc-900">{value}</span>
+        <span className="shrink-0 text-2xl font-bold tracking-tight tabular-nums text-zinc-900">{value}</span>
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-4 min-h-[250px] flex-1">{children}</div>
     </article>
   );
 }
@@ -123,20 +152,23 @@ function MetricsSkeleton() {
       aria-busy="true"
       className="grid grid-cols-1 gap-6 md:col-span-3 md:grid-cols-3"
     >
-      {Array.from({ length: 3 }).map((_, index) => (
-        <article key={index} className="card h-72 overflow-hidden p-5">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <article
+          key={index}
+          className={`card flex min-h-[22rem] flex-col overflow-hidden p-5 ${index === 3 ? "md:col-span-2" : ""}`}
+        >
           <div className="animate-pulse">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-zinc-100" />
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-zinc-100" />
                 <div>
-                  <div className="h-3.5 w-24 rounded bg-zinc-100" />
-                  <div className="mt-2 h-2.5 w-16 rounded bg-zinc-100" />
+                  <div className="h-4 w-28 rounded bg-zinc-100" />
+                  <div className="mt-2 h-3 w-20 rounded bg-zinc-100" />
                 </div>
               </div>
-              <div className="h-4 w-14 rounded bg-zinc-100" />
+              <div className="h-7 w-16 rounded bg-zinc-100" />
             </div>
-            <div className="mt-8 h-40 rounded-xl bg-gradient-to-b from-zinc-100 to-zinc-50" />
+            <div className="mt-8 min-h-[250px] rounded-xl bg-gradient-to-b from-zinc-100 to-zinc-50" />
           </div>
         </article>
       ))}

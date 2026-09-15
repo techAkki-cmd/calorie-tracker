@@ -46,7 +46,7 @@ export function Hero() {
         <motion.div variants={itemVariants}>
           <span className="inline-flex items-center gap-2 rounded-full border border-teal-200/70 bg-white/75 px-4 py-2 shadow-sm backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-teal-600" aria-hidden />
-            <span className="bg-gradient-to-r from-teal-700 to-teal-500 bg-clip-text text-[0.7rem] font-bold uppercase tracking-[0.24em] text-transparent">
+            <span className="bg-gradient-to-r from-teal-700 to-teal-500 bg-clip-text text-sm font-bold uppercase tracking-[0.24em] text-transparent">
               Nutrition Intelligence
             </span>
           </span>
@@ -91,7 +91,7 @@ export function Hero() {
 
         <motion.div
           variants={itemVariants}
-          className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-medium text-zinc-600"
+          className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-medium text-zinc-600"
         >
           <span className="inline-flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-teal-600" aria-hidden />

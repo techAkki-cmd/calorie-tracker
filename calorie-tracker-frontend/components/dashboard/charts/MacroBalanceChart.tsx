@@ -20,8 +20,8 @@ export function MacroBalanceChart({ today }: { today: AnalyticsDay }) {
   const pieData = total > 0 ? macroData : [{ name: "No macros", value: 1, color: "#e4e4e7" }];
 
   return (
-    <div className="flex h-44 flex-col">
-      <div className="min-h-0 flex-1" aria-label="Today's macro balance">
+    <div className="flex h-full min-h-[250px] flex-col">
+      <div className="min-h-[200px] flex-1" aria-label="Today's macro balance">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -30,8 +30,8 @@ export function MacroBalanceChart({ today }: { today: AnalyticsDay }) {
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={42}
-              outerRadius={62}
+              innerRadius={52}
+              outerRadius={78}
               paddingAngle={total > 0 ? 3 : 0}
               stroke="none"
             >
@@ -47,7 +47,7 @@ export function MacroBalanceChart({ today }: { today: AnalyticsDay }) {
         {macroData.map((macro) => (
           <span
             key={macro.name}
-            className="flex items-center gap-1.5 text-[0.65rem] text-zinc-600"
+            className="flex items-center gap-1.5 text-sm text-zinc-600"
           >
             <span
               className="h-2 w-2 rounded-full"

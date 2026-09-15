@@ -233,7 +233,7 @@ export function MealLogModal({ open, onClose, onMealCreated }: MealLogModalProps
             aria-label="Close"
             disabled={isBusy}
             onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -391,7 +391,7 @@ function ImageDropzone({
           <p className="mt-4 text-sm font-semibold text-zinc-800">
             Drag a food photo or nutrition label here
           </p>
-          <p className="mt-1.5 text-xs text-zinc-600">or click to browse · PNG, JPG or WEBP · 10 MB max</p>
+          <p className="mt-1.5 text-sm text-zinc-600">or click to browse · PNG, JPG or WEBP · 10 MB max</p>
         </>
       )}
     </label>
@@ -416,9 +416,9 @@ function ManualMealForm({
   return (
     <form onSubmit={onSubmit} noValidate>
       <div className="flex min-h-6 items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Meal details</p>
+        <p className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Meal details</p>
         {showAiBadge && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-[0.65rem] font-semibold text-teal-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-sm font-semibold text-teal-700">
             <Sparkles className="h-3 w-3" aria-hidden />
             Pre-filled by AI
           </span>
@@ -436,7 +436,7 @@ function ManualMealForm({
               disabled={isSaving}
               onClick={() => onDraftChange("mealType", mealType)}
               className={cn(
-                "h-9 rounded-lg border text-xs font-semibold transition",
+                "h-10 rounded-lg border text-sm font-semibold transition",
                 draft.mealType === mealType
                   ? "border-teal-600 bg-teal-600 text-white shadow-sm"
                   : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
@@ -452,7 +452,7 @@ function ManualMealForm({
         <span className="text-sm font-medium text-zinc-900">Date consumed</span>
         <span className="relative mt-1.5 block">
           <CalendarDays
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
             aria-hidden
           />
           <input
@@ -471,11 +471,11 @@ function ManualMealForm({
           />
         </span>
         {errors.consumedDate && (
-          <p id="meal-consumed-date-error" className="mt-1 text-xs text-red-600" role="alert">
+          <p id="meal-consumed-date-error" className="mt-1 text-sm text-red-600" role="alert">
             {errors.consumedDate}
           </p>
         )}
-        <p className="mt-1 text-xs text-zinc-400">Backdated entries use your current local time.</p>
+        <p className="mt-1 text-sm text-zinc-500">Backdated entries use your current local time.</p>
       </label>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -554,7 +554,7 @@ function TextField({
     <label htmlFor={id} className="block">
       <span className="text-sm font-medium text-zinc-900">{label}</span>
       <input id={id} type="text" maxLength={255} value={value} placeholder={placeholder} disabled={disabled} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={(event) => onChange(event.target.value)} className="form-input mt-1.5 h-11" />
-      {error && <p id={`${id}-error`} className="mt-1 text-xs text-red-600" role="alert">{error}</p>}
+      {error && <p id={`${id}-error`} className="mt-1 text-sm text-red-600" role="alert">{error}</p>}
     </label>
   );
 }
@@ -582,12 +582,12 @@ function NumberField({
 }) {
   return (
     <label htmlFor={id} className="block">
-      <span className="text-xs font-medium text-zinc-700">{label}</span>
+      <span className="text-sm font-medium text-zinc-700">{label}</span>
       <div className="relative mt-1.5">
         <input id={id} type="number" min={0} max={max} step={step} inputMode="decimal" value={value} disabled={disabled} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} onChange={(event) => onChange(event.target.value)} className={cn("form-input h-11 px-3 pr-9", error && "border-red-500 focus:ring-red-500")} />
-        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[0.65rem] text-zinc-400">{unit}</span>
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-zinc-500">{unit}</span>
       </div>
-      {error && <p id={`${id}-error`} className="mt-1 text-xs text-red-600" role="alert">{error}</p>}
+      {error && <p id={`${id}-error`} className="mt-1 text-sm text-red-600" role="alert">{error}</p>}
     </label>
   );
 }

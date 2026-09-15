@@ -32,10 +32,10 @@ export function GoalMetricsPanel({
 
       <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/70 px-3.5 py-3">
         <div className="flex items-center gap-2 text-zinc-600">
-          <Scale className="h-3.5 w-3.5" aria-hidden />
-          <span className="text-xs font-medium">Weight goal</span>
+          <Scale className="h-4 w-4" aria-hidden />
+          <span className="text-sm font-medium">Weight goal</span>
         </div>
-        <span className="text-xs font-semibold tabular-nums text-zinc-900">
+        <span className="text-base font-bold tabular-nums tracking-tight text-zinc-900">
           {goals.targetWeight == null ? "Not set" : `${goals.targetWeight} kg`}
         </span>
       </div>

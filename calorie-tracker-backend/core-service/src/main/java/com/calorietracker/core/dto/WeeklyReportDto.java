@@ -4,6 +4,7 @@ import java.util.List;
 
 public record WeeklyReportDto(
         List<DailySummaryDto> days,
-        HealthGoalDto goals
+        HealthGoalDto goals,
+        List<MicronutrientMentionDto> micronutrients
 ) {
 }

@@ -37,6 +37,8 @@ export function useHealthGoals() {
   const [isSaving, setIsSaving] = useState(false);
   const saveInFlightRef = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
+  const isEditingRef = useRef(false);
+  isEditingRef.current = isEditing;
 
   const loadGoals = useCallback(async () => {
     setLoadState("loading");
@@ -149,6 +151,27 @@ export function useHealthGoals() {
 
   const dismissSaveError = () => setSaveError(undefined);
 
+  const refetch = useCallback(async () => {
+    try {
+      const response = await apiClient<HealthGoalResponse>("/api/goals");
+      const nextGoals = toHealthGoal(response);
+      setGoals(nextGoals);
+      setLoadError(undefined);
+      setLoadState("ready");
+      if (!isEditingRef.current) {
+        setDraft(draftFromGoal(nextGoals));
+      }
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        setGoals(null);
+        setLoadState("ready");
+        if (!isEditingRef.current) {
+          setDraft(EMPTY_GOAL_DRAFT);
+        }
+      }
+    }
+  }, []);
+
   return {
     goals,
     draft,
@@ -164,5 +187,6 @@ export function useHealthGoals() {
     updateDraftField,
     saveGoals,
     dismissSaveError,
+    refetch,
   };
 }

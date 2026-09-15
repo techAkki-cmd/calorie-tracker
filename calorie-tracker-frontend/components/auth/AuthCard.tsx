@@ -24,11 +24,11 @@ export function AuthCard({ title, description, children }: AuthCardProps) {
             <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-zinc-900 sm:text-[1.75rem]">
               {title}
             </h1>
-            <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-600">{description}</p>
+            <p className="mt-2 max-w-sm text-base leading-6 text-zinc-600">{description}</p>
           </div>
           <div className="px-6 py-7 sm:px-8 sm:py-8">{children}</div>
         </div>
-        <p className="mt-5 text-center text-xs leading-5 text-zinc-400">
+        <p className="mt-5 text-center text-sm leading-5 text-zinc-500">
           Secure access to your private nutrition workspace
         </p>
       </div>
@@ -41,7 +41,7 @@ export function FieldError({ id, message }: { id: string; message?: string }) {
     return null;
   }
   return (
-    <p id={id} className="mt-1.5 text-xs text-red-600" role="alert">
+    <p id={id} className="mt-1.5 text-sm text-red-600" role="alert">
       {message}
     </p>
   );
@@ -74,7 +74,7 @@ export function TextField({
       <span className="text-sm font-medium text-zinc-900">{label}</span>
       <span className="relative mt-2 block">
         {leadingIcon && (
-          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-zinc-400">
+          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-zinc-500">
             {leadingIcon}
           </span>
         )}

@@ -6,14 +6,14 @@ import { ChartTooltip } from "./ChartTooltip";
 
 export function WeeklyTrendChart({ data }: { data: AnalyticsDay[] }) {
   return (
-    <div className="h-44 w-full" aria-label="Seven day macronutrient trend">
+    <div className="h-full min-h-[250px] w-full" aria-label="Seven day macronutrient trend">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 12, right: 4, left: 4, bottom: 0 }} barSize={16}>
           <XAxis
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#52525b", fontSize: 10 }}
+            tick={{ fill: "#52525b", fontSize: 12 }}
             dy={8}
           />
           <YAxis hide />

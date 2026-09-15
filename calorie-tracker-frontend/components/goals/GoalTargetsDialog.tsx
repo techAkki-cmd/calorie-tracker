@@ -63,8 +63,8 @@ export function GoalTargetsDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600">
-              <Target className="h-4 w-4" aria-hidden />
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700">
+              <Target className="h-5 w-5" aria-hidden />
             </span>
             <h2 id="goal-targets-title" className="mt-4 text-lg font-semibold tracking-tight text-zinc-900">
               Edit Targets
@@ -76,7 +76,7 @@ export function GoalTargetsDialog({
             aria-label="Close edit targets"
             disabled={isSaving}
             onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -220,7 +220,7 @@ function NumericField({
         )}
       />
       {error && (
-        <p id={errorId} className="mt-1.5 text-xs text-red-600" role="alert">
+        <p id={errorId} className="mt-1.5 text-sm text-red-600" role="alert">
           {error}
         </p>
       )}

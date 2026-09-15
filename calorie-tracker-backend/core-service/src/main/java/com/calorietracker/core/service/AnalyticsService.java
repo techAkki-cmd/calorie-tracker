@@ -3,6 +3,7 @@ package com.calorietracker.core.service;
 import com.calorietracker.core.dto.DailyMacroRow;
 import com.calorietracker.core.dto.DailySummaryDto;
 import com.calorietracker.core.dto.HealthGoalDto;
+import com.calorietracker.core.dto.MicronutrientMentionDto;
 import com.calorietracker.core.dto.WeeklyReportDto;
 import com.calorietracker.core.model.HealthGoal;
 import com.calorietracker.core.repository.FoodEntryRepository;
@@ -18,10 +19,14 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +34,16 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     private static final int WINDOW_DAYS = 7;
+    private static final int MAX_MICRONUTRIENT_MENTIONS = 12;
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.UNNECESSARY);
+    private static final Pattern MICRONUTRIENT_SPLIT =
+            Pattern.compile("\\s*(?:,|;|/|\\|)|\\band\\b\\s*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MICRONUTRIENT_PREFIX = Pattern.compile(
+            "^(high in|low in|low|rich in|good source of|contains)\\s+",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern IGNORED_MICRONUTRIENT = Pattern.compile(
+            "^\\s*(no notable micronutrient information|none|n/?a|not available)\\s*$",
+            Pattern.CASE_INSENSITIVE);
 
     private final FoodEntryRepository foodEntryRepository;
     private final HealthGoalRepository healthGoalRepository;
@@ -57,7 +71,10 @@ public class AnalyticsService {
                 .map(AnalyticsService::toGoalDto)
                 .orElse(null);
 
-        return new WeeklyReportDto(days, goals);
+        List<MicronutrientMentionDto> micronutrients = aggregateMicronutrients(
+                foodEntryRepository.findMicronutrientSummaries(userId, from, to));
+
+        return new WeeklyReportDto(days, goals, micronutrients);
     }
 
     /**
@@ -75,6 +92,48 @@ public class AnalyticsService {
             days.add(row == null ? zeroDay(date) : scaled(row));
         }
         return List.copyOf(days);
+    }
+
+    /**
+     * Free-text meal micros are split into vitamin/mineral phrases and counted for the week.
+     */
+    static List<MicronutrientMentionDto> aggregateMicronutrients(List<String> summaries) {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        Map<String, String> displayLabels = new LinkedHashMap<>();
+
+        for (String summary : summaries) {
+            if (summary == null || IGNORED_MICRONUTRIENT.matcher(summary).matches()) {
+                continue;
+            }
+            for (String part : MICRONUTRIENT_SPLIT.split(summary)) {
+                String label = normalizeMicronutrientLabel(part);
+                if (label.isEmpty() || IGNORED_MICRONUTRIENT.matcher(label).matches()) {
+                    continue;
+                }
+                String key = label.toLowerCase(Locale.ROOT);
+                displayLabels.putIfAbsent(key, label);
+                counts.merge(key, 1L, Long::sum);
+            }
+        }
+
+        return counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder())
+                        .thenComparing(entry -> displayLabels.get(entry.getKey())))
+                .limit(MAX_MICRONUTRIENT_MENTIONS)
+                .map(entry -> new MicronutrientMentionDto(displayLabels.get(entry.getKey()), entry.getValue()))
+                .toList();
+    }
+
+    private static String normalizeMicronutrientLabel(String value) {
+        String trimmed = value == null ? "" : value.trim().replaceAll("\\s+", " ");
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        String withoutPrefix = MICRONUTRIENT_PREFIX.matcher(trimmed).replaceFirst("").trim();
+        if (withoutPrefix.isEmpty()) {
+            return "";
+        }
+        return withoutPrefix.substring(0, 1).toUpperCase(Locale.ROOT) + withoutPrefix.substring(1);
     }
 
     private static DailySummaryDto toSummary(DailyMacroRow row) {

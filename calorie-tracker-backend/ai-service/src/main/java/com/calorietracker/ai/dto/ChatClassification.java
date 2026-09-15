@@ -8,6 +8,8 @@ import java.util.Locale;
 public record ChatClassification(
         String intent,
         @jakarta.validation.Valid NutritionDiaryItem meal,
+        GoalProposal goals,
+        Boolean confirmed,
         String reply
 ) {
 

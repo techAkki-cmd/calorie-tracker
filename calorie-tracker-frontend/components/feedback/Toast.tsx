@@ -27,7 +27,7 @@ export function Toast({ message, onDismiss, duration = 6500 }: ToastProps) {
         type="button"
         aria-label="Dismiss notification"
         onClick={onDismiss}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
       >
         <X className="h-3.5 w-3.5" aria-hidden />
       </button>

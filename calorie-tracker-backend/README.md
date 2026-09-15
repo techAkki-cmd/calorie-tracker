@@ -83,3 +83,19 @@ Run project tests separately when desired with Java 21:
 ```bash
 mvn test
 ```
+
+## Assumptions
+
+- Only the frontend (`127.0.0.1:3010`) and API gateway (`127.0.0.1:9080`) are
+  published. Postgres, RabbitMQ, identity, core, and AI stay on internal Docker
+  networks.
+- A real `GEMINI_API_KEY` is required for chat, photo extraction, and PDF text
+  extraction. Image-only PDF scans are not supported.
+- Weekly analytics cover the last 7 days, including today. Chat weekly recaps
+  use that report plus meals in the same UTC window.
+- The nutrition assistant can log a meal, recap today or the last 7 days, check
+  or update daily goals (after confirming the values), and answer general
+  nutrition questions. PDF import, photo extract, and weight logging stay in
+  the dashboard UI.
+- Meal logging through chat reuses the same idempotency key on retry so a
+  double-submit does not create a second entry.

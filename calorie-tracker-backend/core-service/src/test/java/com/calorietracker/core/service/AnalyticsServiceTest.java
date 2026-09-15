@@ -1,6 +1,7 @@
 package com.calorietracker.core.service;
 
 import com.calorietracker.core.dto.DailySummaryDto;
+import com.calorietracker.core.dto.MicronutrientMentionDto;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -47,5 +48,28 @@ class AnalyticsServiceTest {
         assertThat(days.get(0).totalCalories()).isEqualTo(100);
         assertThat(days.get(1).totalCalories()).isEqualTo(200);
         assertThat(days.get(1).totalProtein()).isEqualByComparingTo("4.00");
+    }
+
+    @Test
+    void aggregatesMicronutrientPhrasesByFrequency() {
+        List<MicronutrientMentionDto> mentions = AnalyticsService.aggregateMicronutrients(List.of(
+                "High in Vitamin C, Low Iron",
+                "Vitamin C and Fiber",
+                "No notable micronutrient information",
+                "  iron  ",
+                ""));
+
+        assertThat(mentions).extracting(MicronutrientMentionDto::label)
+                .containsExactly("Iron", "Vitamin C", "Fiber");
+        assertThat(mentions.get(0).count()).isEqualTo(2L);
+        assertThat(mentions.get(1).count()).isEqualTo(2L);
+        assertThat(mentions.get(2).count()).isEqualTo(1L);
+    }
+
+    @Test
+    void returnsEmptyMicronutrientsWhenOnlyPlaceholderTextExists() {
+        assertThat(AnalyticsService.aggregateMicronutrients(List.of(
+                "No notable micronutrient information",
+                "none"))).isEmpty();
     }
 }

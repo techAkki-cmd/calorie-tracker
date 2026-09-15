@@ -43,4 +43,17 @@ public interface FoodEntryRepository extends JpaRepository<FoodEntry, UUID> {
                                        @Param("from") Instant from,
                                        @Param("to") Instant to,
                                        @Param("timezone") String timezone);
+
+    @Query("""
+            select e.micronutrientSummary
+            from FoodEntry e
+            where e.userId = :userId
+              and e.consumedAt >= :from
+              and e.consumedAt < :to
+              and e.micronutrientSummary is not null
+              and trim(e.micronutrientSummary) <> ''
+            """)
+    List<String> findMicronutrientSummaries(@Param("userId") UUID userId,
+                                            @Param("from") Instant from,
+                                            @Param("to") Instant to);
 }
