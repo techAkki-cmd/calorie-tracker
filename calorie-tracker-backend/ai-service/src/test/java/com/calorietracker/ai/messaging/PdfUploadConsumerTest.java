@@ -3,6 +3,7 @@ package com.calorietracker.ai.messaging;
 import com.calorietracker.ai.client.CoreMealClient;
 import com.calorietracker.ai.dto.ImportedMealRequest;
 import com.calorietracker.ai.dto.NutritionDiaryItem;
+import com.calorietracker.ai.dto.PdfImportJobStatus;
 import com.calorietracker.ai.exception.AiExtractionException;
 import com.calorietracker.ai.pdf.PdfParserUtil;
 import com.calorietracker.ai.pdf.PdfParserUtilTest;
@@ -43,9 +44,10 @@ class PdfUploadConsumerTest {
     @Test
     void importsPdfAndPostsBulkMeals() throws Exception {
         Files.write(importDir.resolve("diary.pdf"), PdfParserUtilTest.pdfWithText("Oatmeal breakfast"));
+        UUID jobId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        consumer.receivePdfUpload(new PdfUploadMessage(userId, "diary.pdf"));
+        consumer.receivePdfUpload(new PdfUploadMessage(jobId, userId, "diary.pdf"));
 
         assertThat(gemini.lastText).contains("Oatmeal breakfast");
         assertThat(coreClient.userIds).containsExactly(userId);
@@ -55,43 +57,34 @@ class PdfUploadConsumerTest {
         assertThat(meal.mealType()).isEqualTo("BREAKFAST");
         assertThat(meal.consumedAt()).isNotNull();
         assertThat(importDir.resolve("diary.pdf")).doesNotExist();
+        assertThat(coreClient.statuses).containsExactly(new StatusUpdate(jobId, PdfImportJobStatus.COMPLETED));
+        assertImportDirectoryIsEmpty();
     }
 
     @Test
-    void propagatesFailureAndPreservesPdfForDeadLetterReplay() throws Exception {
+    void propagatesFailureReportsFailedAndRemovesEveryArtifact() throws Exception {
         Files.write(importDir.resolve("diary.pdf"), PdfParserUtilTest.pdfWithText("bad diary"));
         gemini.fail = true;
+        UUID jobId = UUID.randomUUID();
 
-        assertThatThrownBy(() -> consumer.receivePdfUpload(new PdfUploadMessage(UUID.randomUUID(), "diary.pdf")))
+        assertThatThrownBy(() -> consumer.receivePdfUpload(
+                new PdfUploadMessage(jobId, UUID.randomUUID(), "diary.pdf")))
                 .isInstanceOf(AiExtractionException.class);
         assertThat(coreClient.batches).isEmpty();
-        assertThat(importDir.resolve("diary.pdf")).exists();
+        assertThat(coreClient.statuses).containsExactly(new StatusUpdate(jobId, PdfImportJobStatus.FAILED));
+        assertImportDirectoryIsEmpty();
     }
 
     @Test
-    void replaysSnapshotWithoutCallingGeminiAfterSuccessfulImport() throws Exception {
+    void coreFailureRemovesPdfManifestAndLock() throws Exception {
         Files.write(importDir.resolve("diary.pdf"), PdfParserUtilTest.pdfWithText("Oatmeal"));
-        var message = new PdfUploadMessage(UUID.randomUUID(), "diary.pdf");
-        consumer.receivePdfUpload(message);
-        gemini.fail = true;
-        consumer.receivePdfUpload(message);
-        assertThat(coreClient.batches).hasSize(2);
-        assertThat(coreClient.batches.get(0)).isEqualTo(coreClient.batches.get(1));
-    }
-
-    @Test
-    void coreFailurePreservesSnapshotForReplay() throws Exception {
-        Files.write(importDir.resolve("diary.pdf"), PdfParserUtilTest.pdfWithText("Oatmeal"));
-        var message = new PdfUploadMessage(UUID.randomUUID(), "diary.pdf");
+        UUID jobId = UUID.randomUUID();
+        var message = new PdfUploadMessage(jobId, UUID.randomUUID(), "diary.pdf");
         coreClient.fail = true;
         assertThatThrownBy(() -> consumer.receivePdfUpload(message))
                 .isInstanceOf(IllegalStateException.class);
-        assertThat(importDir.resolve("diary.pdf")).exists();
-        coreClient.fail = false;
-        gemini.fail = true;
-        consumer.receivePdfUpload(message);
-        assertThat(coreClient.batches).hasSize(1);
-        assertThat(importDir.resolve("diary.pdf")).doesNotExist();
+        assertThat(coreClient.statuses).containsExactly(new StatusUpdate(jobId, PdfImportJobStatus.FAILED));
+        assertImportDirectoryIsEmpty();
     }
 
     @Test
@@ -101,8 +94,8 @@ class PdfUploadConsumerTest {
         Files.write(importDir.resolve("retry.pdf"), diary);
         UUID userId = UUID.randomUUID();
 
-        consumer.receivePdfUpload(new PdfUploadMessage(userId, "first.pdf"));
-        consumer.receivePdfUpload(new PdfUploadMessage(userId, "retry.pdf"));
+        consumer.receivePdfUpload(new PdfUploadMessage(UUID.randomUUID(), userId, "first.pdf"));
+        consumer.receivePdfUpload(new PdfUploadMessage(UUID.randomUUID(), userId, "retry.pdf"));
 
         assertThat(coreClient.batches).hasSize(2);
         assertThat(coreClient.batches.get(0).getFirst().idempotencyKey())
@@ -121,6 +114,12 @@ class PdfUploadConsumerTest {
         assertThatThrownBy(() -> consumer.resolveImportPath("/tmp/other.pdf"))
                 .isInstanceOf(AiExtractionException.class)
                 .hasMessageContaining("relative");
+    }
+
+    private void assertImportDirectoryIsEmpty() throws Exception {
+        try (var files = Files.list(importDir)) {
+            assertThat(files).isEmpty();
+        }
     }
 
     private static final class RecordingGemini extends GeminiVisionService {
@@ -147,6 +146,7 @@ class PdfUploadConsumerTest {
         private boolean fail;
         private final List<UUID> userIds = new ArrayList<>();
         private final List<List<ImportedMealRequest>> batches = new ArrayList<>();
+        private final List<StatusUpdate> statuses = new ArrayList<>();
 
         private RecordingCoreClient() {
             super(WebClient.builder().build());
@@ -158,5 +158,13 @@ class PdfUploadConsumerTest {
             userIds.add(userId);
             batches.add(List.copyOf(meals));
         }
+
+        @Override
+        public void updateImportJobStatus(UUID jobId, PdfImportJobStatus status) {
+            statuses.add(new StatusUpdate(jobId, status));
+        }
+    }
+
+    private record StatusUpdate(UUID jobId, PdfImportJobStatus status) {
     }
 }

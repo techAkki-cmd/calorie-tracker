@@ -16,6 +16,10 @@ spring:
     port: 9672
     username: calorie_user
     password: calorie_pass
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
   servlet:
     multipart:
       max-file-size: 10MB

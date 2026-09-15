@@ -37,8 +37,16 @@ public class ChatInterfaceService {
             reference time. Assume UTC if no timezone is given; date-only meals use midnight UTC.""";
 
     private static final String SUMMARIZE_PROMPT = """
-            Write a brief conversational summary for the user using only this data. \
-            Do not invent numbers that are not present.""";
+            Write a concise, friendly nutrition summary using only the supplied data.
+            Use clean Markdown with this exact presentation style:
+            - Start with one short overview sentence.
+            - Put each meal on its own bullet. Bold only the meal type or meal name, then include
+              quantity, calories, protein, carbs, and fat on the same bullet.
+            - Finish with a separate **Daily total** line containing calories and all three macros.
+            - When goals are supplied, add one short **Goal progress** line using only calculated
+              differences from the supplied values.
+            Do not use nested lists, tables, raw JSON, repeated bullet markers, or invented values.
+            Keep the complete response below 140 words.""";
 
     private static final Map<String, Object> MEAL_SCHEMA = Map.of(
             "type", "object",

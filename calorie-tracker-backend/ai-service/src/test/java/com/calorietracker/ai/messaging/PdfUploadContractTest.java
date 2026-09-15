@@ -27,14 +27,17 @@ class PdfUploadContractTest {
 
     @Test
     void deserializesMessageProducedByCoreService() {
+        UUID jobId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Message message = coreProducedMessage("""
-                {"userId":"%s","fileReference":"s3://imports/january.pdf"}""".formatted(userId));
+                {"jobId":"%s","userId":"%s","fileReference":"s3://imports/january.pdf"}"""
+                .formatted(jobId, userId));
 
         Object converted = converter.fromMessage(message);
 
         assertThat(converted).isInstanceOf(PdfUploadMessage.class);
         PdfUploadMessage payload = (PdfUploadMessage) converted;
+        assertThat(payload.jobId()).isEqualTo(jobId);
         assertThat(payload.userId()).isEqualTo(userId);
         assertThat(payload.fileReference()).isEqualTo("s3://imports/january.pdf");
     }
@@ -46,7 +49,8 @@ class PdfUploadContractTest {
     @Test
     void mapsForeignTypeIdHeaderToLocalRecord() {
         Message message = coreProducedMessage("""
-                {"userId":"%s","fileReference":"ref"}""".formatted(UUID.randomUUID()));
+                {"jobId":"%s","userId":"%s","fileReference":"ref"}"""
+                .formatted(UUID.randomUUID(), UUID.randomUUID()));
 
         String typeId = message.getMessageProperties().getHeader("__TypeId__");
         assertThat(typeId).isEqualTo(CORE_TYPE_ID);
@@ -59,7 +63,8 @@ class PdfUploadContractTest {
     void prefersListenerInferredTypeOverTypeIdHeader() {
         UUID userId = UUID.randomUUID();
         Message message = coreProducedMessage("""
-                {"userId":"%s","fileReference":"listener-path"}""".formatted(userId));
+                {"jobId":"%s","userId":"%s","fileReference":"listener-path"}"""
+                .formatted(UUID.randomUUID(), userId));
         message.getMessageProperties().setInferredArgumentType(PdfUploadMessage.class);
 
         Object converted = converter.fromMessage(message);

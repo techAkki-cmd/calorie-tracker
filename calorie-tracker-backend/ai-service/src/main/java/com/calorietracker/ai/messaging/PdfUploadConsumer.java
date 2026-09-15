@@ -4,6 +4,7 @@ import com.calorietracker.ai.client.CoreMealClient;
 import com.calorietracker.ai.config.RabbitMQConfig;
 import com.calorietracker.ai.dto.ImportedMealRequest;
 import com.calorietracker.ai.dto.NutritionDiaryItem;
+import com.calorietracker.ai.dto.PdfImportJobStatus;
 import com.calorietracker.ai.exception.AiExtractionException;
 import com.calorietracker.ai.service.MealValidation;
 import jakarta.validation.Validator;
@@ -51,25 +52,35 @@ public class PdfUploadConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.PDF_UPLOAD_QUEUE)
     public void receivePdfUpload(PdfUploadMessage message) throws IOException {
-        Files.createDirectories(importDir);
-        Path lockPath = importDir.resolve(MealValidation.hash(message.userId() + ":" + message.fileReference()) + ".lock");
-        try (var channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-             var lock = channel.lock()) {
-            processLocked(message);
+        String artifactKey = MealValidation.hash(message.userId() + ":" + message.fileReference());
+        Path lockPath = importDir.resolve(artifactKey + ".lock");
+        Path manifestPath = importDir.resolve(artifactKey + ".meals.json");
+        Path pdfPath = null;
+        try {
+            Files.createDirectories(importDir);
+            pdfPath = resolveImportPath(message.fileReference());
+            validateMessage(message);
+            try (var channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                 var lock = channel.lock()) {
+                processLocked(message, pdfPath, manifestPath);
+            }
+            coreMealClient.updateImportJobStatus(message.jobId(), PdfImportJobStatus.COMPLETED);
+            log.info("Completed PDF import job {} for user {}", message.jobId(), message.userId());
+        } catch (IOException | RuntimeException failure) {
+            reportFailure(message.jobId(), failure);
+            throw failure;
+        } finally {
+            deleteArtifact(pdfPath, "PDF");
+            deleteArtifact(manifestPath, "extraction manifest");
+            deleteArtifact(lockPath, "lock file");
         }
     }
 
-    private void processLocked(PdfUploadMessage message) throws IOException {
-        if (message.userId() == null) {
-            throw AiExtractionException.badRequest("An import user is required");
-        }
-        Path manifest = importDir.resolve(MealValidation.hash(message.userId() + ":" + message.fileReference())
-                + ".meals.json");
+    private void processLocked(PdfUploadMessage message, Path pdf, Path manifest) throws IOException {
         List<ImportedMealRequest> meals;
         if (Files.exists(manifest)) {
             meals = objectMapper.readValue(Files.readString(manifest), new TypeReference<>() {});
         } else {
-            Path pdf = resolveImportPath(message.fileReference());
             String text = pdfParserUtil.extractText(Files.readAllBytes(pdf));
             String documentFingerprint = MealValidation.hash(normalizeDiaryText(text));
             // The file timestamp is the durable upload-time fallback for undated diaries. It also
@@ -91,13 +102,39 @@ public class PdfUploadConsumer {
             }
         }
         coreMealClient.postBulk(message.userId(), meals);
-        // Keep the snapshot for replay after a commit/ack crash; preserve the PDF on failure.
-        try {
-            Files.deleteIfExists(resolveImportPath(message.fileReference()));
-        } catch (AiExtractionException | IOException cleanupFailure) {
-            log.warn("Import completed; PDF cleanup unavailable for {}", message.fileReference());
-        }
         log.info("Imported {} meals for user {}", meals.size(), message.userId());
+    }
+
+    private static void validateMessage(PdfUploadMessage message) {
+        if (message.jobId() == null) {
+            throw AiExtractionException.badRequest("An import job is required");
+        }
+        if (message.userId() == null) {
+            throw AiExtractionException.badRequest("An import user is required");
+        }
+    }
+
+    private void reportFailure(java.util.UUID jobId, Exception originalFailure) {
+        if (jobId == null) {
+            return;
+        }
+        try {
+            coreMealClient.updateImportJobStatus(jobId, PdfImportJobStatus.FAILED);
+        } catch (RuntimeException callbackFailure) {
+            originalFailure.addSuppressed(callbackFailure);
+            log.error("Could not mark PDF import job {} as FAILED", jobId, callbackFailure);
+        }
+    }
+
+    private void deleteArtifact(Path path, String description) {
+        if (path == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException cleanupFailure) {
+            log.warn("Could not delete {} {}", description, path.getFileName(), cleanupFailure);
+        }
     }
 
     /**

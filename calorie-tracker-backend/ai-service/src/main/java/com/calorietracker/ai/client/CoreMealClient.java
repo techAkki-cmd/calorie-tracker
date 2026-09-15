@@ -1,6 +1,7 @@
 package com.calorietracker.ai.client;
 
 import com.calorietracker.ai.dto.ImportedMealRequest;
+import com.calorietracker.ai.dto.PdfImportJobStatus;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,6 +14,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
 
 @Component
 public class CoreMealClient {
@@ -40,6 +42,16 @@ public class CoreMealClient {
                 .header("X-User-Id", userId.toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(meal)
+                .retrieve()
+                .toBodilessEntity()
+                .block(Duration.ofSeconds(15));
+    }
+
+    public void updateImportJobStatus(UUID jobId, PdfImportJobStatus status) {
+        coreServiceWebClient.patch()
+                .uri("/api/internal/import-jobs/{jobId}", jobId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("status", status.name()))
                 .retrieve()
                 .toBodilessEntity()
                 .block(Duration.ofSeconds(15));
