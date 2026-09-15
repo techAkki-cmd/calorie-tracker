@@ -1,6 +1,5 @@
 # NutriMetric: Event-Driven Calorie & Nutrition Intelligence
 
-- **Live Demo URL:** _in review_
 - **Demo Video Link:** _[https://www.loom.com/share/3b6ffea879d04342984bc5620bdf4ca7]_
 
 > **Operational note for reviewers.** The full microservices stack (PostgreSQL, RabbitMQ, identity, core, AI, API gateway, and the Next.js UI) is orchestrated with Docker Compose. Only loopback ports are published: the app at [http://localhost:3010](http://localhost:3010) and the API gateway at [http://localhost:9080](http://localhost:9080). Postgres, RabbitMQ, and the Java services stay on internal Docker networks. A real `GEMINI_API_KEY` is required for photo extraction, chat, and PDF diary parsing. Image-only / scanned PDFs are not supported—tabular text exports are.
